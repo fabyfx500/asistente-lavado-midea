@@ -122,7 +122,7 @@
 <script>
   const PROGRAMAS_A = [
     { id:'algodon', nombre:'Algodón', emoji:'👕', cat:'Lavado', temp:'40°C (Frío–90°C)', rpm:'1400 RPM', secado:'Opcional: Auto Secado', duracion:'≈ 2 h 30 min', desc:'Ciclo potente para tejidos de algodón y lino resistentes: sábanas, toallas, ropa de cama y ropa de trabajo.', tips:['Mete las sábanas y piezas grandes sueltas para que no se hagan una pelota.','Usa la dosis justa de detergente: el exceso deja las toallas duras.','No sobrecargues: deja espacio arriba para que la ropa gire bien.'], warning:null, kw:[['sábana',4],['toalla',4],['toallón',4],['ropa de cama',4],['cubrecama',4],['sobrecama',4],['frazada',4],['edredón',4],['plumón',4],['acolchado',4],['mantel',3],['servilleta',3],['paño de cocina',4],['paños',3],['algodón',2],['lino',3],['overol',3],['uniforme',3],['ropa de trabajo',4],['ropa blanca',3],['blancos',2],['muy sucia',3],['muy sucio',3],['carga pesada',3],['mancha difícil',3],['ropa sucia',2]] },
-    { id:'mixto', nombre:'Mixto', emoji:'🧺', cat:'Lavado', temp:'40°C (20–40°C)', rpm:'1000 RPM (hasta 1400)', secado:'Opcional: Auto Secado', duracion:'≈ 1 h 20 min', desc:'Para cargas cotidianas con mezcla de telas y colores: algodón + sintéticos. El comodín del día a día.', tips:['El agua a 20–40°C evita que la ropa desteña o se achique.','Ideal para ropa de todos los días: poleras, jeans, calcetines y pijamas.','Cierra cierres y velcros, y lava los estampados al revés.'], warning:null, kw:[['mixto',3],['mixta',3],['mezcla',3],['ropa variada',4],['todo tipo',4],['todos los días',4],['diario',2],['diaria',2],['cotidiana',2],['colores',2],['jeans',4],['vaquero',4],['vaqueros',4],['pantalón',3],['polerón',4],['polera',3],['camisa',3],['camiseta',3],['calcetín',3],['calcetines',3],['pijama',3],['blusa',3],['vestido',3],['falda',3],['sudadera',3],['buzos',3],['buzo',3],['ropa de diario',3],['mancha',2]] },
+    { id:'mixto', nombre:'Mixto', emoji:'🧺', cat:'Lavado', temp:'40°C (20–40°C)', rpm:'1000 RPM (hasta 1400)', secado:'Opcional: Auto Secado', duracion:'≈ 1 h 20 min', desc:'Para cargas cotidianas con mezcla de telas y colores: algodón + sintéticos. El comodín del día a día.', tips:['El agua a 20–40°C evita que la ropa desteña o se achique.','Ideal para ropa de todos los días: poleras, jeans, calcetines y pijamas.','Cierra cierres y velcros, y lava los estampados al revés.'], warning:null, kw:[['mixto',3],['mixta',3],['mezcla',3],['ropa variada',4],['todo tipo',4],['todos los días',4],['diario',2],['diaria',2],['cotidiana',2],['colores',2],['jeans',4],['vaquero',4],['vaqueros',4],['pantalón',3],['polerón',4],['polera',3],['camisa',3],['camiseta',3],['calcetín',3],['calcetines',3],['pijama',3],['blusa',3],['vestido',3],['falda',3],['sudadera',3],['buzos',3],['buzo',3],['ropa de diario',3],['mancha',2],['ropa',1],['mucha ropa',3],['mucha carga',3],['montón de ropa',3],['cualquier ropa',4],['ropa en general',3]] },
     { id:'delicado', nombre:'Delicado', emoji:'🌸', cat:'Lavado', temp:'30°C (máx. 40°C)', rpm:'800 RPM', secado:'No usar secadora', duracion:'≈ 55 min', desc:'Ciclo suave con movimientos lentos y centrifugado reducido para telas frágiles.', tips:['Usa una bolsa de malla para proteger las prendas más frágiles.','Seca las prendas delicadas al aire, nunca en secadora.'], warning:'La seda y el encaje no deben centrifugarse fuerte ni secarse con calor.', kw:[['delicado',4],['delicada',4],['delicados',4],['seda',5],['encaje',4],['lencería',4],['tul',4],['organza',4],['blusa fina',4],['prenda fina',4],['ropa fina',3],['transparente',2],['bordado',3],['lentejuela',3],['lentejuelas',3],['encajes',4]] },
     { id:'lana', nombre:'Lana', emoji:'🧶', cat:'Lavado', temp:'30–40°C (máx. 40°C)', rpm:'600 RPM', secado:'No usar secadora', duracion:'≈ 1 h', desc:'Ciclo específico para lana y tejidos que se encogen con el calor o el movimiento.', tips:['Usa detergente especial para lana y lava al revés.','Seca en horizontal sobre una toalla para que no se deforme.'], warning:'Nunca centrifugues la lana a alta velocidad ni uses secadora: encoge.', kw:[['lana',5],['lanas',5],['tejido',3],['tejidos',3],['suéter',4],['sweater',4],['chompa',4],['chompas',4],['chaleco',4],['chalecos',4],['bufanda',4],['gorro',3],['cashmere',5],['cachemir',5],['cachemira',5],['angora',5],['crochet',4],['tejido a mano',4],['chal',4],['guantes',3],['abrigo de lana',5]] },
     { id:'eco', nombre:'ECO 40-60', emoji:'🌱', cat:'Lavado', temp:'40–60°C', rpm:'1400 RPM', secado:'—', duracion:'≈ 3 h (eficiente)', desc:'Programa de eficiencia energética para algodón con suciedad normal. Ahorra agua y energía.', tips:['Carga el tambor completo para aprovechar al máximo el ahorro.','Ideal para el lavado semanal de algodón sin manchas difíciles.'], warning:null, kw:[['eco',4],['ahorro',3],['ahorrar',3],['eficiencia',3],['eficiente',3],['energía',3],['consumo',2],['gastar menos',3],['factura',2],['medio ambiente',3],['ahorrar agua',3],['ahorrar energía',4],['lavado normal',3],['suciedad normal',3],['ecológico',4]] },
@@ -136,7 +136,7 @@
     { id:'autosecado', nombre:'Auto Secado', emoji:'♨️', cat:'Solo secado', temp:'—', rpm:'—', secado:'Secado automático (sensor)', duracion:'Según humedad', desc:'Solo secado, con sensor de humedad que corta cuando la ropa está seca.', tips:['Retira la ropa apenas termine para evitar arrugas y condensación.','Elige el nivel de secado (extra, normal, planchado) según lo que necesites.'], warning:null, kw:[['solo secar',5],['sólo secar',5],['secadora',4],['secado automático',5],['auto secado',5],['ya está lavada',4],['ropa mojada',4],['ropa húmeda',4],['terminar de secar',4],['escurrir y secar',4],['secar la ropa',4],['secar',3],['secado',3]] },
     { id:'tiemposecado', nombre:'Tiempo Secado', emoji:'⏱️', cat:'Solo secado', temp:'—', rpm:'—', secado:'Secado por tiempo fijo', duracion:'30–180 min', desc:'Secado por tiempo fijo, para controlar exactamente cuánto secar.', tips:['Útil para secar un rato y terminar al aire, o para telas que no quieres resecar.'], warning:null, kw:[['secado por tiempo',5],['tiempo de secado',5],['secar 30',5],['secar una hora',5],['secado cronometrado',5],['minutos de secado',5],['secar un rato',4],['secar media hora',5],['secar poco',3]] },
     { id:'centrifugado', nombre:'Sólo Centrifugado', emoji:'🌀', cat:'Solo escurrido', temp:'—', rpm:'1400 RPM (ajustable)', secado:'—', duracion:'≈ 15 min', desc:'Solo escurre/centrifuga la ropa para sacar el exceso de agua.', tips:['Si el tambor vibra mucho, reparte la ropa para balancear el peso.'], warning:null, kw:[['centrifugar',5],['centrifugado',5],['solo centrifugar',5],['sólo centrifugar',5],['escurrir',5],['escurrido',5],['escurrir la ropa',5],['sacar agua',4],['quitar agua',4],['exprimir',4],['centrifugado extra',5],['más centrifugado',4],['solo escurrir',5]] },
-    { id:'limpieza', nombre:'Limpieza Tambor', emoji:'🧼', cat:'Mantenimiento', temp:'90°C', rpm:'400–600 RPM', secado:'—', duracion:'≈ 1 h 15 min', desc:'Limpia y desinfecta el tambor en vacío. Úsalo una vez al mes.', tips:['Corre el ciclo sin ropa ni detergente (o con un limpiador específico).','Deja la puerta abierta después para que se ventile.'], warning:'Ejecútalo en vacío: sin ropa.', kw:[['limpiar la lavadora',5],['limpiar lavadora',5],['limpiar tambor',5],['limpieza de tambor',5],['limpieza tambor',5],['tambor',5],['limpiar',3],['mantenimiento',4],['mantención',4],['desinfectar la máquina',5],['limpiar la máquina',5],['autolimpieza',5],['auto limpieza',5],['olor a humedad',4],['mal olor',4],['moho',4],['hongos',4],['limpieza de la lavadora',5]] },
+    { id:'limpieza', nombre:'Limpieza Tambor', emoji:'🧼', cat:'Mantenimiento', temp:'90°C', rpm:'400–600 RPM', secado:'—', duracion:'≈ 1 h 15 min', desc:'Limpia y desinfecta el tambor en vacío. Úsalo una vez al mes.', tips:['Corre el ciclo sin ropa ni detergente (o con un limpiador específico).','Deja la puerta abierta después para que se ventile.'], warning:'Ejecútalo en vacío: sin ropa.', kw:[['limpiar la lavadora',5],['limpiar lavadora',5],['limpiar tambor',5],['limpieza de tambor',5],['limpieza tambor',5],['mantenimiento',4],['mantención',4],['desinfectar la máquina',5],['limpiar la máquina',5],['autolimpieza',5],['auto limpieza',5],['olor a humedad',4],['mal olor',4],['moho',4],['hongos',4],['limpieza de la lavadora',5]] },
     { id:'favorito', nombre:'Favorito', emoji:'⭐', cat:'Personalizado', temp:'Personalizado', rpm:'Personalizado', secado:'Según configuración', duracion:'—', desc:'Guarda tu combinación favorita de temperatura, centrifugado y secado.', tips:['Configura el ciclo que más uses y la máquina lo memorizará con un toque.'], warning:null, kw:[['favorito',4],['personalizado',4],['mi programa',4],['guardado',4],['programa propio',4],['configurar',3],['personalizar',3]] }
   ];
 
@@ -146,13 +146,26 @@
     return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
   }
 
+  function escaparRegex(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  // Coincidencia de palabras clave: las de una sola palabra se buscan como subcadena;
+  // las frases permiten hasta 2 palabras intermedias (ej: "limpiar tambor" == "limpiar el tambor").
+  function coincide(norm, kw) {
+    const k = normalizar(kw);
+    if (!k.includes(' ')) return norm.includes(k);
+    const partes = k.split(' ').filter(Boolean).map(escaparRegex);
+    return new RegExp(partes.join('(?:\\s+\\S+){0,2}\\s+')).test(norm);
+  }
+
   function recomendar(texto) {
     const norm = normalizar(texto);
     return PROGRAMAS.map(p => {
       let score = 0;
       const matched = [];
       for (const [kw, peso] of p.kw) {
-        if (norm.includes(normalizar(kw))) { score += peso; matched.push(kw); }
+        if (coincide(norm, kw)) { score += peso; matched.push(kw); }
       }
       return { p, score, matched };
     }).sort((a, b) => b.score - a.score);
@@ -194,7 +207,10 @@
       area.innerHTML = '<div class="card empty">🤔 No detecté una prenda clara. Describe mejor la ropa (ej: "ropa deportiva de poliéster", "sábanas y toallas", "un suéter de lana") o toca un ejemplo de arriba.</div>';
       return;
     }
-    const porQue = `<div class="why">💡 Detecté: ${top.matched.slice(0, 4).join(', ')}</div>`;
+    const norm = normalizar(texto);
+    const sobrecarga = ['casi todo', 'casi llena', 'lleno', 'llena', 'sobrecarga', 'mucha ropa', 'mucha carga', 'no cabe', 'ocupa todo', 'demasiada ropa', 'hasta el tope'].some(t => norm.includes(t));
+    const porQue = `<div class="why">💡 Detecté: ${top.matched.slice(0, 4).join(', ')}</div>`
+      + (sobrecarga ? '<div class="warning">⚠️ Mencionaste que el tambor queda casi lleno: retira algunas prendas para que la ropa gire, se enjuague y se centrifuga bien (máx. ~9,5 kg en lavado y ~7 kg en secado).</div>' : '');
     let html = tarjetaPrograma(top.p, porQue);
 
     const altos = resultados.slice(1).filter(r => r.score > 0).slice(0, 2);

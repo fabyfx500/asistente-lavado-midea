@@ -195,29 +195,57 @@
       </div>`;
   }
 
-  function renderResultado(texto) {
+  // Pide la recomendación al asistente IA (/api/recomendar). Si falla, usa el motor local.
+  async function obtenerRecomendacion(texto) {
+    if (location.protocol !== 'file:') {
+      try {
+        const r = await fetch('/api/recomendar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ texto })
+        });
+        if (r.ok) {
+          const data = await r.json();
+          const principal = PROGRAMAS.find(p => p.id === data.id);
+          if (principal) {
+            const alternativas = (data.alternativas || [])
+              .map(id => PROGRAMAS.find(p => p.id === id))
+              .filter(Boolean);
+            return { principal, alternativas, origen: 'IA', motivo: data.motivo || 'Recomendación del asistente IA.' };
+          }
+        }
+      } catch (e) { /* sin conexión o sin clave: seguimos con el motor local */ }
+    }
+    const res = recomendar(texto);
+    const top = res[0];
+    if (!top || top.score === 0) return null;
+    const alternativas = res.slice(1).filter(r => r.score > 0).slice(0, 2).map(r => r.p);
+    return { principal: top.p, alternativas, origen: 'local', motivo: 'Detecté: ' + top.matched.slice(0, 4).join(', ') };
+  }
+
+  async function renderResultado(texto) {
     const area = document.getElementById('resultArea');
     if (!texto.trim()) {
       area.innerHTML = '<div class="card empty">✍️ Escribe qué vas a lavar para que te recomiende un programa.</div>';
       return;
     }
-    const resultados = recomendar(texto);
-    const top = resultados[0];
-    if (!top || top.score === 0) {
+    area.innerHTML = '<div class="card empty">⏳ Analizando tu descripción…</div>';
+    const rec = await obtenerRecomendacion(texto);
+    if (!rec) {
       area.innerHTML = '<div class="card empty">🤔 No detecté una prenda clara. Describe mejor la ropa (ej: "ropa deportiva de poliéster", "sábanas y toallas", "un suéter de lana") o toca un ejemplo de arriba.</div>';
       return;
     }
     const norm = normalizar(texto);
     const sobrecarga = ['casi todo', 'casi llena', 'lleno', 'llena', 'sobrecarga', 'mucha ropa', 'mucha carga', 'no cabe', 'ocupa todo', 'demasiada ropa', 'hasta el tope'].some(t => norm.includes(t));
-    const porQue = `<div class="why">💡 Detecté: ${top.matched.slice(0, 4).join(', ')}</div>`
+    const emoji = rec.origen === 'IA' ? '🤖' : '💡';
+    const porQue = `<div class="why">${emoji} ${rec.motivo}</div>`
       + (sobrecarga ? '<div class="warning">⚠️ Mencionaste que el tambor queda casi lleno: retira algunas prendas para que la ropa gire, se enjuague y se centrifuga bien (máx. ~9,5 kg en lavado y ~7 kg en secado).</div>' : '');
-    let html = tarjetaPrograma(top.p, porQue);
+    let html = tarjetaPrograma(rec.principal, porQue);
 
-    const altos = resultados.slice(1).filter(r => r.score > 0).slice(0, 2);
-    if (altos.length) {
+    if (rec.alternativas.length) {
       html += '<div class="alt-title">También podría servirte</div><div class="alt-list">';
-      for (const r of altos) {
-        html += `<button class="alt-item" type="button" data-id="${r.p.id}">${r.p.emoji} <span><strong>${r.p.nombre}</strong> — ${r.p.desc}</span></button>`;
+      for (const p of rec.alternativas) {
+        html += `<button class="alt-item" type="button" data-id="${p.id}">${p.emoji} <span><strong>${p.nombre}</strong> — ${p.desc}</span></button>`;
       }
       html += '</div>';
     }

@@ -7,231 +7,246 @@
   <style>
     :root {
       --primary: #0284c7;
-      --bg: #f8fafc;
+      --primary-dark: #0369a1;
+      --bg: #f1f5f9;
       --card-bg: #ffffff;
       --text: #0f172a;
       --text-muted: #64748b;
       --border: #e2e8f0;
+      --warn: #f59e0b;
     }
+    * { box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: var(--bg);
+      background: linear-gradient(180deg, #e0f2fe 0%, var(--bg) 260px);
       color: var(--text);
       margin: 0;
       padding: 16px;
       display: flex;
       justify-content: center;
     }
-    .container {
-      width: 100%;
-      max-width: 480px;
+    .container { width: 100%; max-width: 520px; }
+    header { text-align: center; margin-bottom: 18px; }
+    header .logo { font-size: 2.6rem; line-height: 1; }
+    h1 { font-size: 1.45rem; color: var(--primary-dark); margin: 6px 0 2px; }
+    p.subtitle { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+    .badge-model {
+      display: inline-block; margin-top: 8px; font-size: 0.72rem; font-weight: 700;
+      letter-spacing: .4px; color: #0369a1; background: #e0f2fe;
+      border: 1px solid #bae6fd; padding: 4px 10px; border-radius: 999px;
     }
-    h1 {
-      font-size: 1.5rem;
-      text-align: center;
-      color: var(--primary);
-      margin-bottom: 4px;
+    label { font-weight: 700; font-size: 0.95rem; display: block; margin-bottom: 8px; }
+    textarea {
+      width: 100%; min-height: 74px; padding: 12px 14px; font-size: 1rem; font-family: inherit;
+      border-radius: 12px; border: 1.5px solid var(--border); background: #fff; resize: vertical;
+      outline: none; transition: border-color .15s, box-shadow .15s;
     }
-    p.subtitle {
-      text-align: center;
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      margin-top: 0;
-      margin-bottom: 20px;
+    textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(2,132,199,.12); }
+    .btn {
+      width: 100%; margin-top: 10px; padding: 12px; font-size: 1rem; font-weight: 700; color: #fff;
+      background: var(--primary); border: none; border-radius: 12px; cursor: pointer; transition: background .15s;
     }
-    label {
-      font-weight: 600;
-      font-size: 0.95rem;
-      display: block;
-      margin-bottom: 8px;
+    .btn:hover { background: var(--primary-dark); }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .chip {
+      font-size: 0.78rem; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border);
+      background: #fff; color: var(--text); cursor: pointer;
     }
-    select {
-      width: 100%;
-      padding: 12px;
-      font-size: 1rem;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background-color: #fff;
-      margin-bottom: 20px;
-      outline: none;
-    }
+    .chip:hover { border-color: var(--primary); color: var(--primary); }
     .card {
-      background: var(--card-bg);
-      border-radius: 12px;
-      padding: 16px;
-      border: 1px solid var(--border);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      background: var(--card-bg); border-radius: 14px; padding: 16px; border: 1px solid var(--border);
+      box-shadow: 0 8px 20px -8px rgba(15,23,42,.12); margin-top: 16px;
     }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    .stat-box {
-      background: #f1f5f9;
-      padding: 10px;
-      border-radius: 8px;
-    }
-    .stat-label {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      font-weight: 700;
-    }
-    .stat-value {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--primary);
-      margin-top: 2px;
-    }
-    .tips {
-      margin-top: 12px;
-      font-size: 0.9rem;
-      line-height: 1.4;
-    }
-    .tips ul {
-      margin: 8px 0 0 0;
-      padding-left: 20px;
-    }
+    .program-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .program-emoji { font-size: 2.2rem; }
+    .program-title { font-size: 1.3rem; font-weight: 800; color: var(--primary-dark); }
+    .program-cat { font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: .5px; }
+    .desc { font-size: 0.9rem; color: #334155; line-height: 1.45; margin: 0 0 12px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .stat-box { background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: 10px; }
+    .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: .4px; }
+    .stat-value { font-size: 1rem; font-weight: 700; color: var(--primary-dark); margin-top: 2px; }
+    .tips { margin-top: 10px; font-size: 0.88rem; line-height: 1.5; }
+    .tips ul { margin: 6px 0 0 0; padding-left: 20px; }
+    .tips li { margin-bottom: 4px; }
     .warning {
-      background-color: #fffbebfb;
-      border-left: 4px solid #f59e0b;
-      padding: 10px;
-      margin-top: 12px;
-      font-size: 0.85rem;
-      border-radius: 4px;
+      background-color: #fffbeb; border-left: 4px solid var(--warn); padding: 10px 12px;
+      margin-top: 12px; font-size: 0.85rem; border-radius: 6px; color: #7c4a03;
     }
+    .why { margin-top: 12px; font-size: 0.82rem; color: var(--text-muted); background: #f0f9ff; border-radius: 8px; padding: 8px 10px; }
+    .alt-title { margin-top: 16px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: .5px; }
+    .alt-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+    .alt-item {
+      display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--border);
+      border-radius: 10px; background: #fff; cursor: pointer; text-align: left; font-size: .88rem; color: var(--text);
+    }
+    .alt-item:hover { border-color: var(--primary); }
+    .all-title { margin-top: 22px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: .5px; }
+    .all-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+    .all-item {
+      font-size: .82rem; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px;
+      background: #fff; cursor: pointer; text-align: left; color: var(--text);
+    }
+    .all-item:hover { border-color: var(--primary); color: var(--primary-dark); }
+    footer { margin-top: 22px; text-align: center; font-size: .75rem; color: var(--text-muted); line-height: 1.5; }
+    .empty { text-align: center; color: var(--text-muted); padding: 20px 10px; }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>🧺 Lavadora Midea</h1>
-  <p class="subtitle">Guía rápida de lavado y secado</p>
+  <header>
+    <div class="logo">🧺</div>
+    <h1>Asistente de Lavado Midea</h1>
+    <p class="subtitle">Cuéntame qué vas a lavar y te recomiendo el mejor programa</p>
+    <span class="badge-model">MLSF-095B · Quattro Inverter · 9,5 / 7 kg</span>
+  </header>
 
-  <label for="loadSelect">¿Qué vas a lavar hoy?</label>
-  <select id="loadSelect" onchange="updateGuide()">
-    <option value="deportiva">Ropa Deportiva (Poliéster)</option>
-    <option value="mixto">Ropa Variada / Todo tipo (Mixto)</option>
-    <option value="sabanas">Sábanas solas (con Secado)</option>
-    <option value="toallas">Toallas de baño y Paños de cocina</option>
-    <option value="polerones">Polerones gruesos / Pijamas</option>
-    <option value="sabanas_toallas">Sábanas y Toallas juntas</option>
-  </select>
+  <label for="loadInput">¿Qué vas a lavar hoy?</label>
+  <textarea id="loadInput" rows="2" placeholder="Ej: Voy a lavar ropa deportiva de poliéster... o sábanas y toallas... o un suéter de lana..."></textarea>
+  <button class="btn" id="btnRecomendar" type="button">✨ Recomendar programa</button>
 
-  <div class="card" id="resultCard">
-    <!-- El contenido se genera dinámicamente -->
-  </div>
+  <div class="chips" id="chips"></div>
+
+  <div id="resultArea"></div>
+
+  <div class="all-title">Los 14 programas de tu lavadora</div>
+  <div class="all-list" id="allList"></div>
+
+  <footer>
+    Lavadora-Secadora Midea MLSF-095B · carga frontal · 9,5 kg lavado / 7 kg secado · 1400 RPM<br>
+    Motor Inverter Quattro · Display Lunar · Stain Master · HealthGuard
+  </footer>
 </div>
 
 <script>
-  const data = {
-    deportiva: {
-      programa: "20°C",
-      temp: "20°C / Frío",
-      centrifugado: "800 - 1000 RPM",
-      secado: "APAGADO",
-      tips: [
-        "Usa detergente OMO líquido en la casilla II.",
-        "<b>No usar suavizante:</b> Tapona los poros de las telas sintéticas.",
-        "Lavar poleras con estampados al revés y cerrar cierres/velcros."
-      ],
-      warning: "El calor del secado o agua caliente daña permanentemente la elasticidad del poliéster."
-    },
-    mixto: {
-      programa: "Mixto",
-      temp: "20°C",
-      centrifugado: "1000 RPM",
-      secado: "APAGADO (o d-2 si requiere secado)",
-      tips: [
-        "El agua a 20°C evita que la ropa desteña o se achique.",
-        "Ideal para cargas cotidianas con mezcla de telas y colores."
-      ]
-    },
-    sabanas: {
-      programa: "Algodón o Lavado/Secado",
-      temp: "40°C",
-      centrifugado: "1400 RPM",
-      secado: "d-1 o d-2 (Auto Secado)",
-      tips: [
-        "Meter las piezas sueltas para evitar que se hagan una pelota.",
-        "Al ser telas livianas, el sensor acortará el tiempo de secado."
-      ]
-    },
-    toallas: {
-      programa: "Algodón",
-      temp: "40°C",
-      centrifugado: "1200 - 1400 RPM",
-      secado: "d-3 (si se requiere secado)",
-      tips: [
-        "Usar dosis justa de detergente (el exceso las pone duras).",
-        "Evitar suavizante para que no pierdan capacidad de absorción."
-      ]
-    },
-    polerones: {
-      programa: "Algodón o Mixto",
-      temp: "20°C - 30°C",
-      centrifugado: "1000 - 1200 RPM",
-      secado: "APAGADO (o d-2)",
-      tips: [
-        "Si el tambor está muy lleno, asegúrate de dejar espacio superior para que gire bien.",
-        "Las temperaturas bajas evitan que el algodón se achique."
-      ],
-      warning: "Si el tambor vibra mucho al centrifugar, reacomoda los polerones para balancear el peso."
-    },
-    sabanas_toallas: {
-      programa: "Algodón",
-      temp: "40°C",
-      centrifugado: "1400 RPM",
-      secado: "d-2 o d-3",
-      tips: [
-        "Lava e higieniza profundamente telas pesadas.",
-        "Remueve la ropa apenas termine el ciclo para evitar condensación y arrugas."
-      ]
-    }
-  };
+  const PROGRAMAS_A = [
+    { id:'algodon', nombre:'Algodón', emoji:'👕', cat:'Lavado', temp:'40°C (Frío–90°C)', rpm:'1400 RPM', secado:'Opcional: Auto Secado', duracion:'≈ 2 h 30 min', desc:'Ciclo potente para tejidos de algodón y lino resistentes: sábanas, toallas, ropa de cama y ropa de trabajo.', tips:['Mete las sábanas y piezas grandes sueltas para que no se hagan una pelota.','Usa la dosis justa de detergente: el exceso deja las toallas duras.','No sobrecargues: deja espacio arriba para que la ropa gire bien.'], warning:null, kw:[['sábana',4],['toalla',4],['toallón',4],['ropa de cama',4],['cubrecama',4],['sobrecama',4],['frazada',4],['edredón',4],['plumón',4],['acolchado',4],['mantel',3],['servilleta',3],['paño de cocina',4],['paños',3],['algodón',2],['lino',3],['overol',3],['uniforme',3],['ropa de trabajo',4],['ropa blanca',3],['blancos',2],['muy sucia',3],['muy sucio',3],['carga pesada',3],['mancha difícil',3],['ropa sucia',2]] },
+    { id:'mixto', nombre:'Mixto', emoji:'🧺', cat:'Lavado', temp:'40°C (20–40°C)', rpm:'1000 RPM (hasta 1400)', secado:'Opcional: Auto Secado', duracion:'≈ 1 h 20 min', desc:'Para cargas cotidianas con mezcla de telas y colores: algodón + sintéticos. El comodín del día a día.', tips:['El agua a 20–40°C evita que la ropa desteña o se achique.','Ideal para ropa de todos los días: poleras, jeans, calcetines y pijamas.','Cierra cierres y velcros, y lava los estampados al revés.'], warning:null, kw:[['mixto',3],['mixta',3],['mezcla',3],['ropa variada',4],['todo tipo',4],['todos los días',4],['diario',2],['diaria',2],['cotidiana',2],['colores',2],['jeans',4],['vaquero',4],['vaqueros',4],['pantalón',3],['polerón',4],['polera',3],['camisa',3],['camiseta',3],['calcetín',3],['calcetines',3],['pijama',3],['blusa',3],['vestido',3],['falda',3],['sudadera',3],['buzos',3],['buzo',3],['ropa de diario',3],['mancha',2]] },
+    { id:'delicado', nombre:'Delicado', emoji:'🌸', cat:'Lavado', temp:'30°C (máx. 40°C)', rpm:'800 RPM', secado:'No usar secadora', duracion:'≈ 55 min', desc:'Ciclo suave con movimientos lentos y centrifugado reducido para telas frágiles.', tips:['Usa una bolsa de malla para proteger las prendas más frágiles.','Seca las prendas delicadas al aire, nunca en secadora.'], warning:'La seda y el encaje no deben centrifugarse fuerte ni secarse con calor.', kw:[['delicado',4],['delicada',4],['delicados',4],['seda',5],['encaje',4],['lencería',4],['tul',4],['organza',4],['blusa fina',4],['prenda fina',4],['ropa fina',3],['transparente',2],['bordado',3],['lentejuela',3],['lentejuelas',3],['encajes',4]] },
+    { id:'lana', nombre:'Lana', emoji:'🧶', cat:'Lavado', temp:'30–40°C (máx. 40°C)', rpm:'600 RPM', secado:'No usar secadora', duracion:'≈ 1 h', desc:'Ciclo específico para lana y tejidos que se encogen con el calor o el movimiento.', tips:['Usa detergente especial para lana y lava al revés.','Seca en horizontal sobre una toalla para que no se deforme.'], warning:'Nunca centrifugues la lana a alta velocidad ni uses secadora: encoge.', kw:[['lana',5],['lanas',5],['tejido',3],['tejidos',3],['suéter',4],['sweater',4],['chompa',4],['chompas',4],['chaleco',4],['chalecos',4],['bufanda',4],['gorro',3],['cashmere',5],['cachemir',5],['cachemira',5],['angora',5],['crochet',4],['tejido a mano',4],['chal',4],['guantes',3],['abrigo de lana',5]] },
+    { id:'eco', nombre:'ECO 40-60', emoji:'🌱', cat:'Lavado', temp:'40–60°C', rpm:'1400 RPM', secado:'—', duracion:'≈ 3 h (eficiente)', desc:'Programa de eficiencia energética para algodón con suciedad normal. Ahorra agua y energía.', tips:['Carga el tambor completo para aprovechar al máximo el ahorro.','Ideal para el lavado semanal de algodón sin manchas difíciles.'], warning:null, kw:[['eco',4],['ahorro',3],['ahorrar',3],['eficiencia',3],['eficiente',3],['energía',3],['consumo',2],['gastar menos',3],['factura',2],['medio ambiente',3],['ahorrar agua',3],['ahorrar energía',4],['lavado normal',3],['suciedad normal',3],['ecológico',4]] },
+    { id:'20c', nombre:'20°C', emoji:'❄️', cat:'Lavado', temp:'20°C (agua fría)', rpm:'1000 RPM', secado:'No usar secadora', duracion:'≈ 1 h', desc:'Lavado en frío que protege los colores, evita desteñir y cuida las fibras sintéticas.', tips:['No uses suavizante en poliéster: tapa los poros de la tela.','Lava las prendas con estampado al revés y cierra cierres y velcros.'], warning:'El calor (agua caliente o secadora) daña la elasticidad del poliéster y la lycra.', kw:[['deportiva',4],['deportivo',4],['deporte',3],['poliéster',5],['sintético',4],['sintéticos',4],['lycra',4],['licra',4],['elastano',4],['elastán',4],['spandex',4],['calza',4],['calzas',4],['leggins',4],['malla',4],['mallas',4],['gym',4],['gimnasio',4],['running',4],['frío',2],['agua fría',3],['20 grados',4],['destiña',4],['destiñe',4],['desteñir',4],['estampado',3],['estampados',3],['yoga',3],['ropa de yoga',4]] },
+    { id:'vapor', nombre:'Vapor Hygiene', emoji:'♨️', cat:'Lavado + Higiene', temp:'60–90°C', rpm:'1400 RPM', secado:'Secado a alta temperatura', duracion:'≈ 2 h', desc:'Higieniza con vapor y alta temperatura: elimina bacterias y alérgenos (HealthGuard).', tips:['Ideal para ropa de bebé, ropa interior, toallas y personas alérgicas.','Verifica que la etiqueta permita agua caliente (no lana ni seda).'], warning:'No uses este programa con lana, seda ni prendas que encojan con el calor.', kw:[['higiene',5],['higienizar',5],['sanitizar',5],['sanitiz',5],['desinfectar',5],['desinfección',5],['bacterias',4],['gérmenes',4],['virus',4],['alérgenos',4],['alergia',4],['alérgico',4],['vapor',4],['health guard',5],['healthguard',5],['bebé',4],['guagua',4],['ropa de bebé',5],['pañal',3],['pañales',3],['ropa de guagua',5],['calzones',3],['calzoncillos',3],['ropa interior',3],['mascarilla',3],['toallas sanitizadas',5]] }
+  ];
 
-  function updateGuide() {
-    const key = document.getElementById("loadSelect").value;
-    const info = data[key];
+  const PROGRAMAS_B = [
+    { id:'rapido15', nombre:"Rápido 15'", emoji:'⚡', cat:'Lavado exprés', temp:'Frío–30°C', rpm:'800 RPM', secado:'—', duracion:'15 min', desc:'Lavado exprés para poca ropa con suciedad leve. Perfecto para refrescar.', tips:['No cargues más de 2–3 prendas para que lave bien.','No sirve para ropa muy sucia ni cargas grandes.'], warning:null, kw:[['rápido',4],['exprés',4],['express',4],['15 minutos',5],['15 min',5],['urgente',4],['apurado',4],['apurada',4],['poca ropa',5],['poca carga',4],['refrescar',4],['recién usada',4],['sudor leve',4],['una prenda',4],['pocas prendas',4],['salir rápido',4],['una camisa',3],['una polera',3]] },
+    { id:'lavadosecado', nombre:'Lavado y Secado', emoji:'🔄', cat:'Lavado + Secado', temp:'Según programa', rpm:'—', secado:'Sí (continuo)', duracion:'≈ 3–4 h', desc:'Lava y seca en un solo ciclo, sin intervención. Deja la ropa lista para guardar.', tips:['Usa como máximo la mitad de la carga de secado (7 kg) para un buen resultado.','No mezcles prendas que no soporten secadora.'], warning:null, kw:[['lavar y secar',5],['lavado y secado',5],['lavar y secar de una',5],['todo en uno',5],['2 en 1',4],['dos en uno',4],['de una vez',3],['sin sacar la ropa',4],['secar después',4],['lavar y secar en un ciclo',5],['que quede seca',4],['lista para guardar',3],['secar',2],['secado',2]] },
+    { id:'autosecado', nombre:'Auto Secado', emoji:'♨️', cat:'Solo secado', temp:'—', rpm:'—', secado:'Secado automático (sensor)', duracion:'Según humedad', desc:'Solo secado, con sensor de humedad que corta cuando la ropa está seca.', tips:['Retira la ropa apenas termine para evitar arrugas y condensación.','Elige el nivel de secado (extra, normal, planchado) según lo que necesites.'], warning:null, kw:[['solo secar',5],['sólo secar',5],['secadora',4],['secado automático',5],['auto secado',5],['ya está lavada',4],['ropa mojada',4],['ropa húmeda',4],['terminar de secar',4],['escurrir y secar',4],['secar la ropa',4],['secar',3],['secado',3]] },
+    { id:'tiemposecado', nombre:'Tiempo Secado', emoji:'⏱️', cat:'Solo secado', temp:'—', rpm:'—', secado:'Secado por tiempo fijo', duracion:'30–180 min', desc:'Secado por tiempo fijo, para controlar exactamente cuánto secar.', tips:['Útil para secar un rato y terminar al aire, o para telas que no quieres resecar.'], warning:null, kw:[['secado por tiempo',5],['tiempo de secado',5],['secar 30',5],['secar una hora',5],['secado cronometrado',5],['minutos de secado',5],['secar un rato',4],['secar media hora',5],['secar poco',3]] },
+    { id:'centrifugado', nombre:'Sólo Centrifugado', emoji:'🌀', cat:'Solo escurrido', temp:'—', rpm:'1400 RPM (ajustable)', secado:'—', duracion:'≈ 15 min', desc:'Solo escurre/centrifuga la ropa para sacar el exceso de agua.', tips:['Si el tambor vibra mucho, reparte la ropa para balancear el peso.'], warning:null, kw:[['centrifugar',5],['centrifugado',5],['solo centrifugar',5],['sólo centrifugar',5],['escurrir',5],['escurrido',5],['escurrir la ropa',5],['sacar agua',4],['quitar agua',4],['exprimir',4],['centrifugado extra',5],['más centrifugado',4],['solo escurrir',5]] },
+    { id:'limpieza', nombre:'Limpieza Tambor', emoji:'🧼', cat:'Mantenimiento', temp:'90°C', rpm:'400–600 RPM', secado:'—', duracion:'≈ 1 h 15 min', desc:'Limpia y desinfecta el tambor en vacío. Úsalo una vez al mes.', tips:['Corre el ciclo sin ropa ni detergente (o con un limpiador específico).','Deja la puerta abierta después para que se ventile.'], warning:'Ejecútalo en vacío: sin ropa.', kw:[['limpiar la lavadora',5],['limpiar lavadora',5],['limpiar tambor',5],['limpieza de tambor',5],['limpieza tambor',5],['tambor',5],['limpiar',3],['mantenimiento',4],['mantención',4],['desinfectar la máquina',5],['limpiar la máquina',5],['autolimpieza',5],['auto limpieza',5],['olor a humedad',4],['mal olor',4],['moho',4],['hongos',4],['limpieza de la lavadora',5]] },
+    { id:'favorito', nombre:'Favorito', emoji:'⭐', cat:'Personalizado', temp:'Personalizado', rpm:'Personalizado', secado:'Según configuración', duracion:'—', desc:'Guarda tu combinación favorita de temperatura, centrifugado y secado.', tips:['Configura el ciclo que más uses y la máquina lo memorizará con un toque.'], warning:null, kw:[['favorito',4],['personalizado',4],['mi programa',4],['guardado',4],['programa propio',4],['configurar',3],['personalizar',3]] }
+  ];
 
-    let html = `
-      <div class="grid">
-        <div class="stat-box">
-          <div class="stat-label">Programa</div>
-          <div class="stat-value">${info.programa}</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Temperatura</div>
-          <div class="stat-value">${info.temp}</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Centrifugado</div>
-          <div class="stat-value">${info.centrifugado}</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Secado</div>
-          <div class="stat-value">${info.secado}</div>
-        </div>
-      </div>
-      <div class="tips">
-        <strong>Recomendaciones:</strong>
-        <ul>
-          ${info.tips.map(tip => `<li>${tip}</li>`).join('')}
-        </ul>
-      </div>
-    `;
+  const PROGRAMAS = PROGRAMAS_A.concat(PROGRAMAS_B);
 
-    if (info.warning) {
-      html += `<div class="warning">⚠️ ${info.warning}</div>`;
-    }
+  function normalizar(s) {
+    return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
+  }
 
-    document.getElementById("resultCard").innerHTML = html;
+  function recomendar(texto) {
+    const norm = normalizar(texto);
+    return PROGRAMAS.map(p => {
+      let score = 0;
+      const matched = [];
+      for (const [kw, peso] of p.kw) {
+        if (norm.includes(normalizar(kw))) { score += peso; matched.push(kw); }
+      }
+      return { p, score, matched };
+    }).sort((a, b) => b.score - a.score);
   }
 
   // Inicializar al cargar
-  updateGuide();
+  function tarjetaPrograma(p, extra) {
+    return `
+      <div class="card">
+        <div class="program-head">
+          <div class="program-emoji">${p.emoji}</div>
+          <div>
+            <div class="program-cat">${p.cat}</div>
+            <div class="program-title">${p.nombre}</div>
+          </div>
+        </div>
+        <p class="desc">${p.desc}</p>
+        <div class="grid">
+          <div class="stat-box"><div class="stat-label">Temperatura</div><div class="stat-value">${p.temp}</div></div>
+          <div class="stat-box"><div class="stat-label">Centrifugado</div><div class="stat-value">${p.rpm}</div></div>
+          <div class="stat-box"><div class="stat-label">Secado</div><div class="stat-value">${p.secado}</div></div>
+          <div class="stat-box"><div class="stat-label">Duración</div><div class="stat-value">${p.duracion}</div></div>
+        </div>
+        <div class="tips"><strong>Recomendaciones:</strong><ul>${p.tips.map(t => `<li>${t}</li>`).join('')}</ul></div>
+        ${p.warning ? `<div class="warning">⚠️ ${p.warning}</div>` : ''}
+        ${extra || ''}
+      </div>`;
+  }
+
+  function renderResultado(texto) {
+    const area = document.getElementById('resultArea');
+    if (!texto.trim()) {
+      area.innerHTML = '<div class="card empty">✍️ Escribe qué vas a lavar para que te recomiende un programa.</div>';
+      return;
+    }
+    const resultados = recomendar(texto);
+    const top = resultados[0];
+    if (!top || top.score === 0) {
+      area.innerHTML = '<div class="card empty">🤔 No detecté una prenda clara. Describe mejor la ropa (ej: "ropa deportiva de poliéster", "sábanas y toallas", "un suéter de lana") o toca un ejemplo de arriba.</div>';
+      return;
+    }
+    const porQue = `<div class="why">💡 Detecté: ${top.matched.slice(0, 4).join(', ')}</div>`;
+    let html = tarjetaPrograma(top.p, porQue);
+
+    const altos = resultados.slice(1).filter(r => r.score > 0).slice(0, 2);
+    if (altos.length) {
+      html += '<div class="alt-title">También podría servirte</div><div class="alt-list">';
+      for (const r of altos) {
+        html += `<button class="alt-item" type="button" data-id="${r.p.id}">${r.p.emoji} <span><strong>${r.p.nombre}</strong> — ${r.p.desc}</span></button>`;
+      }
+      html += '</div>';
+    }
+    area.innerHTML = html;
+
+    area.querySelectorAll('.alt-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p = PROGRAMAS.find(x => x.id === btn.dataset.id);
+        area.innerHTML = tarjetaPrograma(p, '<div class="why">👆 Mostrando el programa que elegiste.</div>');
+      });
+    });
+  }
+
+  function init() {
+    const input = document.getElementById('loadInput');
+    const btn = document.getElementById('btnRecomendar');
+    const chips = document.getElementById('chips');
+    const allList = document.getElementById('allList');
+
+    const ejemplos = ['Ropa deportiva de poliéster','Sábanas y toallas','Un suéter de lana','Jeans y poleras','Ropa de bebé (higiene)','Lavar y secar de una vez','Solo secar la ropa','Ropa delicada de seda'];
+    chips.innerHTML = ejemplos.map(e => `<button class="chip" type="button">${e}</button>`).join('');
+    chips.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+      input.value = c.textContent;
+      renderResultado(input.value);
+      input.focus();
+    }));
+
+    allList.innerHTML = PROGRAMAS.map(p => `<button class="all-item" type="button" data-id="${p.id}">${p.emoji} ${p.nombre}</button>`).join('');
+    allList.querySelectorAll('.all-item').forEach(b => b.addEventListener('click', () => {
+      const p = PROGRAMAS.find(x => x.id === b.dataset.id);
+      const area = document.getElementById('resultArea');
+      area.innerHTML = tarjetaPrograma(p, '<div class="why">👆 Mostrando el programa que elegiste de la lista.</div>');
+      area.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }));
+
+    function run() { renderResultado(input.value); }
+    btn.addEventListener('click', run);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); run(); }
+    });
+
+    renderResultado('');
+  }
+
+  init();
 </script>
 
 </body>

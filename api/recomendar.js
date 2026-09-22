@@ -2,15 +2,49 @@
 // Requiere la variable de entorno OPENROUTER_API_KEY (Vercel > Settings > Environment Variables).
 // La clave NUNCA va en el HTML: se queda en el servidor.
 
-// Modelos gratuitos de OpenRouter (se prueban en orden). Puedes fijar uno con OPENROUTER_MODEL.
-const MODELOS = [
+// Modelos gratuitos: se DESCUBREN dinámicamente desde OpenRouter (los IDs cambian seguido).
+// Orden preferido (se usa si el modelo existe en la lista real). Puedes forzar uno con OPENROUTER_MODEL.
+const PREFERIDOS = [
   process.env.OPENROUTER_MODEL,
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'qwen/qwen-2.5-72b-instruct:free',
-  'deepseek/deepseek-chat-v3-0324:free',
-  'google/gemma-2-9b-it:free',
-  'mistralai/mistral-7b-instruct:free'
+  'z-ai/glm-5.2:free',
+  'qwen/qwen3.8-27b:free',
+  'google/gemma-4-31b-it:free',
+  'nex-agi/nex-n2.5-pro:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'thinkingmachines/inkling:free'
 ].filter(Boolean);
+
+// Modelos que no sirven para esta tarea (código, visión, moderación, finanzas, salud).
+const EXCLUIR = ['code', 'vision', 'vl', 'embed', 'guard', 'safety', 'moderation', 'finance', 'health'];
+
+let CACHE_GRATIS = null;
+
+async function listarGratis() {
+  if (CACHE_GRATIS) return CACHE_GRATIS;
+  try {
+    const r = await fetch('https://openrouter.ai/api/v1/models');
+    if (!r.ok) return [];
+    const data = await r.json();
+    CACHE_GRATIS = (data.data || [])
+      .map(m => m && m.id)
+      .filter(id => typeof id === 'string' && id.endsWith(':free'))
+      .filter(id => !EXCLUIR.some(x => id.toLowerCase().includes(x)));
+    return CACHE_GRATIS;
+  } catch (e) { return []; }
+}
+
+async function obtenerCandidatos(max) {
+  const gratis = await listarGratis();
+  let lista;
+  if (gratis.length) {
+    const pref = PREFERIDOS.filter(m => gratis.includes(m));
+    const resto = gratis.filter(m => !pref.includes(m));
+    lista = pref.concat(resto);
+  } else {
+    lista = PREFERIDOS;
+  }
+  return lista.slice(0, max || 5);
+}
 
 const PROGRAMAS = [
   { id: 'algodon', nombre: 'Algodón', uso: 'Sábanas, toallas, ropa de cama, manteles, algodón y lino resistente. 40°C (hasta 90°C), 1400 rpm.' },
@@ -56,6 +90,17 @@ function extraerJSON(txt) {
 }
 
 module.exports = async function handler(req, res) {
+  // GET: diagnóstico rápido (no gasta cuota). POST: recomendación.
+  if (req.method === 'GET') {
+    const gratis = await listarGratis();
+    res.status(200).json({
+      ok: true,
+      claveConfigurada: !!process.env.OPENROUTER_API_KEY,
+      modelosGratisDisponibles: gratis.length,
+      candidatos: await obtenerCandidatos(5)
+    });
+    return;
+  }
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Metodo no permitido' });
     return;
@@ -77,8 +122,9 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  let detalle = '';
-  for (const modelo of MODELOS) {
+  const candidatos = await obtenerCandidatos(5);
+  const errores = [];
+  for (const modelo of candidatos) {
     try {
       const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -95,16 +141,17 @@ module.exports = async function handler(req, res) {
             { role: 'system', content: SISTEMA },
             { role: 'user', content: texto }
           ]
-        })
+        }),
+        signal: AbortSignal.timeout(15000)
       });
 
-      if (!r.ok) { detalle = modelo + ' HTTP ' + r.status; continue; }
+      if (!r.ok) { errores.push(modelo + ' HTTP ' + r.status); continue; }
 
       const data = await r.json();
       const contenido = data && data.choices && data.choices[0] && data.choices[0].message
         ? data.choices[0].message.content : '';
       const parsed = extraerJSON(contenido);
-      if (!parsed || !IDS.includes(parsed.id)) { detalle = modelo + ' respuesta invalida'; continue; }
+      if (!parsed || !IDS.includes(parsed.id)) { errores.push(modelo + ' JSON invalido'); continue; }
 
       const alternativas = (Array.isArray(parsed.alternativas) ? parsed.alternativas : [])
         .filter(id => IDS.includes(id) && id !== parsed.id)
@@ -118,9 +165,9 @@ module.exports = async function handler(req, res) {
       });
       return;
     } catch (e) {
-      detalle = modelo + ' ' + (e && e.message ? e.message : 'error');
+      errores.push(modelo + ' ' + (e && e.message ? e.message : 'error'));
     }
   }
 
-  res.status(502).json({ error: 'No se pudo obtener recomendacion de la IA.', detalle });
+  res.status(502).json({ error: 'No se pudo obtener recomendacion de la IA.', intentos: candidatos.length, detalle: errores.join(' | ') });
 };

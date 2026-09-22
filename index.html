@@ -35,6 +35,12 @@
       letter-spacing: .4px; color: #0369a1; background: #e0f2fe;
       border: 1px solid #bae6fd; padding: 4px 10px; border-radius: 999px;
     }
+    .ia-status {
+      display: inline-block; margin-top: 6px; font-size: 0.72rem; font-weight: 700;
+      padding: 3px 10px; border-radius: 999px; border: 1px solid transparent;
+    }
+    .ia-on { color: #166534; background: #dcfce7; border-color: #bbf7d0; }
+    .ia-off { color: #475569; background: #f1f5f9; border-color: #e2e8f0; }
     label { font-weight: 700; font-size: 0.95rem; display: block; margin-bottom: 8px; }
     textarea {
       width: 100%; min-height: 74px; padding: 12px 14px; font-size: 1rem; font-family: inherit;
@@ -100,6 +106,7 @@
     <h1>Asistente de Lavado Midea</h1>
     <p class="subtitle">Cuéntame qué vas a lavar y te recomiendo el mejor programa</p>
     <span class="badge-model">MLSF-095B · Quattro Inverter · 9,5 / 7 kg</span>
+    <div id="iaStatus" class="ia-status ia-off">… verificando asistente IA</div>
   </header>
 
   <label for="loadInput">¿Qué vas a lavar hoy?</label>
@@ -286,6 +293,33 @@
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); run(); }
     });
+
+    async function verificarIA() {
+      const el = document.getElementById('iaStatus');
+      if (!el) return;
+      if (location.protocol === 'file:') {
+        el.className = 'ia-status ia-off';
+        el.textContent = '💡 Modo local (abierta sin servidor)';
+        return;
+      }
+      try {
+        const r = await fetch('/api/recomendar');
+        if (r.ok) {
+          const d = await r.json();
+          if (d.claveConfigurada && d.modelosGratisDisponibles > 0) {
+            el.className = 'ia-status ia-on';
+            el.textContent = '🤖 IA activa · ' + d.modelosGratisDisponibles + ' modelos gratis';
+            return;
+          }
+        }
+        el.className = 'ia-status ia-off';
+        el.textContent = '💡 Modo local (IA no configurada)';
+      } catch (e) {
+        el.className = 'ia-status ia-off';
+        el.textContent = '💡 Modo local (sin conexión a la IA)';
+      }
+    }
+    verificarIA();
 
     renderResultado('');
   }

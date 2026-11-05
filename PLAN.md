@@ -14,14 +14,16 @@
   `OPENROUTER_API_KEY`). Ese día la IA deja de responder y la app queda en modo local. Antes de esa
   fecha: quitarle el vencimiento al editarla, o crear una clave nueva, ponerla en Vercel y redeploy.
   Recordárselo a Fabián en cualquier sesión desde febrero de 2027.
-- **Próximo paso:** en el S21 FE, abrir la app y actualizar a v11 (pie de página "Versión de la
-  app: v11"); luego probar "Compartir" → "Lavado Midea" desde otra app. Android solo agrega la app
-  al menú Compartir cuando Chrome regenera la app instalada (WebAPK) con el manifest nuevo; puede
-  tardar hasta un día tras abrirla. Si no aparece, desinstalar y volver a instalar. Después, solo
-  queda la Decisión pendiente (mejorar el prompt) o ideas nuevas de Fabián. Recordar: hay CSP (nada
-  de `style=""` ni `onclick=""`; si se toca el script del tema, `node pruebas/cabeceras.mjs`).
-  `VERSION` de `sw.js` va en `v11`.
-- **Próxima sesión:** `13. Prueba en el S21 FE / mejoras`
+- **Próximo paso:** la Decisión pendiente: mejorar el prompt de la IA con datos del manual,
+  ejemplos y sugerencia de temperatura/rpm (en `programas.js` → campo `ia`, y el prompt en
+  `api/recomendar.js`). Preguntarle antes a Fabián si tiene otras ideas que prefiera.
+  Recordar: hay CSP (nada de `style=""` ni `onclick=""`; si se toca el script del tema,
+  `node pruebas/cabeceras.mjs`). `VERSION` de `sw.js` va en `v11`.
+- **Compartir en el S21 FE:** sin probar; Fabián decidió no probarlo por ahora (2026-11-05).
+  WhatsApp no comparte mensajes de texto hacia otras apps; para probar sirve una nota (Samsung
+  Notes/Keep → Compartir → Texto) o texto seleccionado en Chrome. Si "Lavado Midea" no aparece,
+  revisar que esté en v11 y, si hace falta, reinstalar la app.
+- **Próxima sesión:** `13. Mejorar el prompt de la IA`
 - **Usuarios:** solo 3 personas del mismo departamento (Fabián, su pareja y su cuñada), sin cuentas
   ni login. Límite de la API: 15/min y 150/día por IP, 600/día en total (por instancia de Vercel).
 

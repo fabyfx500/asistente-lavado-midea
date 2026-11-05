@@ -12,6 +12,10 @@
   `index.html` solo queda un `<script>` en línea (el tema antes de pintar); se puede permitir con su
   hash. `VERSION` de `sw.js` va en `v6`.
 - **Próxima sesión:** `8. Fase 3 – Límite de uso de la API`
+- **Usuarios:** solo 3 personas del mismo departamento (Fabián, su pareja y su cuñada). El límite
+  por IP debe ser holgado (en el wifi de la casa comparten IP), sin cuentas ni login. El límite en
+  memoria de Vercel es solo por instancia: proponer a Fabián además un tope de gasto en la clave de
+  OpenRouter (lo configura él en su panel), que es lo que de verdad protege el saldo.
 
 ## Diagnóstico (revisión del 2026-11-04)
 

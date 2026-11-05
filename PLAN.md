@@ -7,8 +7,7 @@
 ## Estado actual
 
 - **Fase en curso:** Fase 1 (sin empezar)
-- **Próximo paso:** el usuario carga créditos en OpenRouter y se publica el cambio a Haiku 5.5;
-  verificar en producción (`modelo` en la respuesta del POST). Luego empezar la Fase 1.
+- **Próximo paso:** empezar la Fase 1 (PWA): `manifest.webmanifest` + íconos.
 
 ## Diagnóstico (revisión del 2026-11-04)
 
@@ -69,4 +68,4 @@
 | Fecha | Qué se hizo | Commit |
 |---|---|---|
 | 2026-11-04 | Revisión completa del proyecto, diagnóstico y plan. Se crean `PLAN.md` y `CLAUDE.md`. | — |
-| 2026-11-04 | Cambio a Claude Haiku 5.5 como modelo principal con respaldo gratuito; indicador "IA activa · Claude Haiku". Probado con simulación, falta probar en producción. | — |
+| 2026-11-04 | Cambio a Claude Haiku 5.5 como modelo principal con respaldo gratuito; indicador "IA activa · Claude Haiku". Verificado en producción: responde Haiku en 1,7–2,5 s (antes 9 s); "sábanas planas" → Algodón. La clave de Vercel es la "Default key" de OpenRouter. `PLAN.md` no es público (404). | `9477ec8` |

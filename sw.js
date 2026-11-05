@@ -1,14 +1,16 @@
 // Service worker del Asistente de Lavado Midea.
-// - Página (HTML) y scripts (.js): red primero; si no hay conexión, la última copia guardada.
-//   Así la página y programas.js siempre vienen de la misma versión.
+// - Página (HTML), scripts (.js) y estilos (.css): red primero; si no hay conexión, la última
+//   copia guardada. Así la página, app.js, programas.js y styles.css siempre son de la misma versión.
 // - Estáticos (íconos, manifest): caché primero y se actualizan en segundo plano.
 // - /api: nunca se cachea (siempre va a la red).
 // IMPORTANTE: al cambiar archivos del front, sube VERSION para que la app instalada
 // muestre el aviso "Hay una versión nueva".
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CACHE = 'lavado-midea-' + VERSION;
 const PRECACHE = [
   '/',
+  '/styles.css',
+  '/app.js',
   '/programas.js',
   '/manifest.webmanifest',
   '/icons/icon.svg',
@@ -47,7 +49,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(redPrimero(req, '/'));
     return;
   }
-  if (url.pathname.endsWith('.js')) {
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
     event.respondWith(redPrimero(req, url.pathname));
     return;
   }

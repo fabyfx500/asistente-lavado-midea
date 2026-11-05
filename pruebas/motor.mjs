@@ -1,16 +1,16 @@
 // Pruebas del motor local de palabras clave.
 // Uso: node pruebas/motor.mjs
-// Toma el código del motor directamente de index.html (desde "function normalizar" hasta
+// Toma el código del motor directamente de app.js (desde "function normalizar" hasta
 // "function tarjetaPrograma") y los programas de programas.js, así las pruebas siempre usan
 // la versión real.
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
 const PROGRAMAS = createRequire(import.meta.url)('../programas.js');
-const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const html = readFileSync(new URL('../app.js', import.meta.url), 'utf8');
 const ini = html.indexOf('function normalizar');
 const fin = html.indexOf('function tarjetaPrograma');
-if (ini < 0 || fin < 0) throw new Error('No encontré el motor dentro de index.html');
+if (ini < 0 || fin < 0) throw new Error('No encontré el motor dentro de app.js');
 const { recomendar, coincide, normalizar } =
   new Function('PROGRAMAS', html.slice(ini, fin) + '\nreturn { recomendar, coincide, normalizar };')(PROGRAMAS);
 

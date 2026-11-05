@@ -6,12 +6,13 @@
 
 ## Estado actual
 
-- **Fase en curso:** Fase 3 (1 de 4 tareas hecha).
-- **Próximo paso:** Fase 3: separar `styles.css` y `app.js` (sumarlos a
-  `PRECACHE`; los `.js` ya van "red primero" en `sw.js`). Ojo: `pruebas/motor.mjs` toma el motor de
-  `index.html` entre `function normalizar` y `function tarjetaPrograma`: si pasa a `app.js`, ajustar.
-  `VERSION` de `sw.js` va en `v5`.
-- **Próxima sesión:** `7. Fase 3 – Separar CSS y JS`
+- **Fase en curso:** Fase 3 (2 de 4 tareas hechas).
+- **Próximo paso:** primero publicar la sesión 7 (`styles.css` + `app.js`, `sw.js` v6) y verificar en
+  producción si no se hizo. Luego Fase 3: límite de uso por IP y verificación de origen en
+  `/api/recomendar` (agregar casos a `pruebas/servidor.mjs`). Para la CSP de la tarea siguiente: en
+  `index.html` solo queda un `<script>` en línea (el tema antes de pintar); se puede permitir con su
+  hash. `VERSION` de `sw.js` va en `v6`.
+- **Próxima sesión:** `8. Fase 3 – Límite de uso de la API`
 
 ## Diagnóstico (revisión del 2026-11-04)
 
@@ -66,7 +67,7 @@
 ## Fase 3 — Orden y seguridad
 
 - [x] `programas.js` único compartido por front y API
-- [ ] Separar `styles.css` y `app.js`
+- [x] Separar `styles.css` y `app.js`
 - [ ] Límite de uso por IP y verificación de origen en `/api/recomendar`
 - [ ] Cabeceras de seguridad: CSP, `Referrer-Policy`
 
@@ -88,3 +89,4 @@
 | 5. Fase 2 – Servidor | 2026-11-04 | `api/recomendar.js`: una sola llamada a OpenRouter con `models: [Haiku, 2 gratis]` (OpenRouter salta al siguiente si uno falla), mismos parámetros para todos (`max_tokens` 1024, `reasoning` low, salida JSON, sin `temperature`), tope total de 7 s (504 si la IA no contesta) y `modelo` real tomado de la respuesta. Lista de gratis con caché de 1 h que se renueva por detrás; en frío espera máx. 1,5 s y, sin lista, usa solo Haiku (un id inexistente haría fallar la llamada). Pruebas nuevas en `pruebas/servidor.mjs` (18 casos OK, OpenRouter simulado); 29 del motor OK. GET probado con la lista real. Publicado y verificado en producción: Haiku acepta la llamada única y responde en 0,8–3 s dentro de la función (1,2–3,7 s en total); "sábanas planas y fundas" → Algodón, "ropa deportiva de poliéster" → 20°C, "quiero limpiar el tambor" → Limpieza, "tambor lleno de jeans y poleras" → Mixto. | `2ad8935` |
 | 6. Fase 3 – Programas en un solo archivo | 2026-11-05 | Nuevo `programas.js` con los 14 programas (datos de la tarjeta + `ia`, el resumen para el prompt, + `kw` del motor local), generado desde los datos anteriores y verificado idéntico; el prompt de la IA queda exactamente igual. `index.html` lo carga con `<script src="programas.js">` (ruta relativa: sigue funcionando al abrir el archivo directo) y `api/recomendar.js` con `require`. `sw.js` → v4: precachea `programas.js`, los `.js` van "red primero" (página y datos siempre de la misma versión) y `/sw.js` nunca se guarda. Pruebas adaptadas: 29 del motor y 18 del servidor OK. Probado en Chrome (localhost, IA simulada): 14 programas en la lista, resultado local al instante y reemplazo por la IA, y sin servidor carga desde caché y recomienda ("suéter de lana" → Lana). Publicado y verificado en producción: `/programas.js` 200 con los 14 programas, `sw.js` en v4, `/pruebas/` y `PLAN.md` dan 404, la función de Vercel incluye `programas.js` y Haiku responde en 1,1–1,9 s ("sábanas planas y fundas" → Algodón, "ropa deportiva de poliéster" → 20°C, "quiero limpiar el tambor" → Limpieza, "un suéter de lana" → Lana). En Chrome con la v1 vieja apareció el aviso, "Actualizar" activó la v4 y borró la caché anterior. Falta actualizar en el S21 FE. | `1a945fa` |
 | 6. Fase 3 – Programas en un solo archivo | 2026-11-05 | A pedido de Fabián, el indicador muestra el modelo con su versión ("IA activa · Claude Haiku 5.5"): el nombre se arma desde el `modelo` que devuelve el servidor (los gratuitos siguen como "IA"). `VERSION` de `sw.js` → v5. Publicado y verificado en producción: "sábanas y toallas" → Algodón con "Claude Haiku 5.5" en el indicador; apareció el aviso de versión nueva (v4→v5). Fabián actualizó el S21 FE a v5 sin problemas. | `9979c3c` |
+| 7. Fase 3 – Separar CSS y JS | 2026-11-05 | `index.html` queda solo con la estructura (77 líneas): los estilos pasan a `styles.css` y la lógica + motor local a `app.js`, copiados tal cual (verificado idéntico línea por línea). Rutas relativas, así abrir el archivo directo sigue funcionando. El script del tema sigue en línea en el `<head>` para que no parpadee. `sw.js` → v6: precachea `styles.css` y `app.js`, y el `.css` también va "red primero" (página, estilos y scripts siempre de la misma versión). `pruebas/motor.mjs` ahora lee el motor de `app.js`; 29 del motor y 18 del servidor OK. README y CLAUDE.md actualizados. Probado en Chrome (localhost, IA simulada): v6 activa con los 10 archivos en caché, 14 programas, local al instante ("Sábanas y toallas" → Algodón) y reemplazo por la IA con "Claude Haiku 5.5"; sin servidor carga con estilos desde la caché y recomienda ("un suéter de lana" → Lana). Falta publicar y probar en el S21 FE. | (ver git log) |

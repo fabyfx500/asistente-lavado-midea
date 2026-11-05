@@ -25,12 +25,14 @@ Si no hay créditos o falla, se usan automáticamente los modelos gratuitos (`:f
 3. Redeploy. Listo.
 
 > ⚠️ **Seguridad:** la clave vive solo en el servidor (variable de entorno). No la pongas
-> nunca en `index.html`, porque quedaría pública. El archivo `.env` está en `.gitignore`.
+> nunca en el front (`index.html`, `app.js`), porque quedaría pública. El archivo `.env` está en `.gitignore`.
 
 ## Estructura
 
 ```
-index.html            # Front (UI + motor local de respaldo)
+index.html            # Página (estructura HTML)
+styles.css            # Estilos (tema claro y oscuro)
+app.js                # Lógica de la página + motor local de respaldo
 programas.js          # Los 14 programas: datos únicos para la página y la API
 api/recomendar.js     # Vercel Serverless Function (OpenRouter)
 manifest.webmanifest  # PWA: nombre, colores, íconos y accesos rápidos

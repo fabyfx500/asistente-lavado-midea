@@ -1,13 +1,15 @@
 // Service worker del Asistente de Lavado Midea.
-// - Página (HTML): red primero; si no hay conexión, la última copia guardada.
+// - Página (HTML) y scripts (.js): red primero; si no hay conexión, la última copia guardada.
+//   Así la página y programas.js siempre vienen de la misma versión.
 // - Estáticos (íconos, manifest): caché primero y se actualizan en segundo plano.
 // - /api: nunca se cachea (siempre va a la red).
 // IMPORTANTE: al cambiar archivos del front, sube VERSION para que la app instalada
 // muestre el aviso "Hay una versión nueva".
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE = 'lavado-midea-' + VERSION;
 const PRECACHE = [
   '/',
+  '/programas.js',
   '/manifest.webmanifest',
   '/icons/icon.svg',
   '/icons/icon-192.png',
@@ -39,22 +41,27 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith('/api/')) return;
+  if (url.pathname.startsWith('/api/') || url.pathname === '/sw.js') return;
 
   if (req.mode === 'navigate') {
-    event.respondWith(paginaRedPrimero(req));
+    event.respondWith(redPrimero(req, '/'));
+    return;
+  }
+  if (url.pathname.endsWith('.js')) {
+    event.respondWith(redPrimero(req, url.pathname));
     return;
   }
   event.respondWith(cachePrimero(event, req));
 });
 
-async function paginaRedPrimero(req) {
+// "clave": con qué nombre se guarda (la página siempre como "/", aunque venga con ?q=).
+async function redPrimero(req, clave) {
   const cache = await caches.open(CACHE);
   const red = fetch(req).then((res) => {
-    if (res.ok) cache.put('/', res.clone());
+    if (res.ok) cache.put(clave, res.clone());
     return res;
   });
-  const guardada = await cache.match('/');
+  const guardada = await cache.match(clave);
   if (!guardada) return red;
   // Con mala señal no esperamos para siempre: a los 4 s mostramos la copia guardada.
   const plazo = new Promise((resolve) => setTimeout(() => resolve(guardada), ESPERA_RED_MS));

@@ -2,7 +2,7 @@
 
 Web app (Vercel) que recomienda uno de los 14 programas de la lavadora-secadora Midea MLSF-095B.
 `index.html` = UI + motor local de palabras clave. `api/recomendar.js` = función serverless que
-consulta OpenRouter. Producción: https://asistente-lavado-midea.vercel.app
+consulta OpenRouter. `programas.js` = los 14 programas, compartido por ambos (no duplicar datos). Producción: https://asistente-lavado-midea.vercel.app
 
 ## Trabajo por sesiones
 
@@ -23,6 +23,6 @@ de verdad del avance.
 - Textos de la interfaz, commits y documentación en español.
 - La clave de OpenRouter vive solo en variables de entorno de Vercel; nunca en el front.
 - Mantener el motor local funcionando como respaldo sin conexión.
-- Es una PWA: al cambiar `index.html` o los íconos, subir `VERSION` en `sw.js` para que la app
+- Es una PWA: al cambiar `index.html`, `programas.js` o los íconos, subir `VERSION` en `sw.js` para que la app
   instalada muestre "Hay una versión nueva". Si se agrega un archivo estático, sumarlo a `PRECACHE`.
 - Para probar el service worker usar Chrome (el navegador integrado de la app no lo soporta).

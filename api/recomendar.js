@@ -113,22 +113,8 @@ function cuerpoPara(modelos, texto) {
   };
 }
 
-const PROGRAMAS = [
-  { id: 'algodon', nombre: 'Algodón', uso: 'Sábanas, toallas, ropa de cama, manteles, algodón y lino resistente. 40°C (hasta 90°C), 1400 rpm.' },
-  { id: 'mixto', nombre: 'Mixto', uso: 'Ropa cotidiana con mezcla de telas y colores: poleras, jeans, camisas, pijamas. 40°C, 1000 rpm. Opción segura por defecto.' },
-  { id: 'delicado', nombre: 'Delicado', uso: 'Seda, encaje, lencería y telas frágiles. 30°C, 800 rpm, sin secadora.' },
-  { id: 'lana', nombre: 'Lana', uso: 'Lana, tejidos, suéteres, bufandas, cashmere. Máximo 40°C, 600 rpm, sin secadora.' },
-  { id: 'eco', nombre: 'ECO 40-60', uso: 'Ahorro de agua y energía con algodón de suciedad normal. 40-60°C, 1400 rpm.' },
-  { id: '20c', nombre: '20°C', uso: 'Agua fría: ropa deportiva, poliéster, sintéticos, lycra, prendas que destiñen. 20°C, 1000 rpm.' },
-  { id: 'vapor', nombre: 'Vapor Hygiene', uso: 'Higiene y sanitización: ropa de bebé, ropa interior, toallas, personas alérgicas. 60-90°C, 1400 rpm.' },
-  { id: 'rapido15', nombre: "Rápido 15'", uso: 'Poca ropa con suciedad leve y urgencia. Frío-30°C, 800 rpm, 15 min.' },
-  { id: 'lavadosecado', nombre: 'Lavado y Secado', uso: 'Lavar y secar en un solo ciclo continuo, sin intervención. 3-4 h.' },
-  { id: 'autosecado', nombre: 'Auto Secado', uso: 'Solo secar, con sensor de humedad que corta al estar seca.' },
-  { id: 'tiemposecado', nombre: 'Tiempo Secado', uso: 'Solo secar por tiempo fijo (30-180 min).' },
-  { id: 'centrifugado', nombre: 'Sólo Centrifugado', uso: 'Solo escurrir/centrifugar para sacar el exceso de agua. 1400 rpm.' },
-  { id: 'limpieza', nombre: 'Limpieza Tambor', uso: 'SOLO para limpiar/desinfectar el tambor de la máquina, EN VACÍO y sin ropa (mantenimiento). 90°C.' },
-  { id: 'favorito', nombre: 'Favorito', uso: 'Programa personalizado guardado por el usuario.' }
-];
+// Los 14 programas vienen del archivo compartido con la página (campo "ia" = resumen para el prompt).
+const PROGRAMAS = require('../programas.js');
 
 const IDS = PROGRAMAS.map(p => p.id);
 
@@ -137,7 +123,7 @@ const SISTEMA = [
   'Tu tarea: elegir EL MEJOR de sus 14 programas para lo que el usuario describe que va a lavar.',
   '',
   'Programas disponibles (usa EXACTAMENTE el id indicado):',
-  PROGRAMAS.map(p => '- ' + p.id + ' (' + p.nombre + '): ' + p.uso).join('\n'),
+  PROGRAMAS.map(p => '- ' + p.id + ' (' + p.nombre + '): ' + p.ia).join('\n'),
   '',
   'Reglas:',
   '- Responde UNICAMENTE con un objeto JSON valido, sin texto extra ni markdown.',

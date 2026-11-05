@@ -8,6 +8,7 @@
 
 - **Fase en curso:** Fase 1 (sin empezar)
 - **Próximo paso:** empezar la Fase 1 (PWA): `manifest.webmanifest` + íconos.
+- **Próxima sesión:** `2. Fase 1 – PWA instalable`
 
 ## Diagnóstico (revisión del 2026-11-04)
 
@@ -65,7 +66,7 @@
 
 ## Bitácora de sesiones
 
-| Fecha | Qué se hizo | Commit |
-|---|---|---|
-| 2026-11-04 | Revisión completa del proyecto, diagnóstico y plan. Se crean `PLAN.md` y `CLAUDE.md`. | — |
-| 2026-11-04 | Cambio a Claude Haiku 5.5 como modelo principal con respaldo gratuito; indicador "IA activa · Claude Haiku". Verificado en producción: responde Haiku en 1,7–2,5 s (antes 9 s); "sábanas planas" → Algodón. La clave de Vercel es la "Default key" de OpenRouter. `PLAN.md` no es público (404). | `9477ec8` |
+| Sesión | Fecha | Qué se hizo | Commit |
+|---|---|---|---|
+| 1. Setup inicial (optimización) | 2026-11-04 | Revisión completa del proyecto, diagnóstico y plan. Se crean `PLAN.md` y `CLAUDE.md`. | — |
+| 1. Setup inicial (optimización) | 2026-11-04 | Cambio a Claude Haiku 5.5 como modelo principal con respaldo gratuito; indicador "IA activa · Claude Haiku". Verificado en producción: responde Haiku en 1,7–2,5 s (antes 9 s); "sábanas planas" → Algodón. La clave de Vercel es la "Default key" de OpenRouter. `PLAN.md` no es público (404). | `9477ec8` |

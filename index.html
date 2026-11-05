@@ -71,6 +71,32 @@
   </footer>
 </div>
 
+<dialog class="fav-dialogo" id="favDialogo" aria-labelledby="favTitulo">
+  <h2 class="fav-titulo" id="favTitulo">⭐ Mi Favorito</h2>
+  <p class="fav-ayuda">Anota la combinación que guardaste en el botón Favorito de la lavadora. Queda solo en este teléfono.</p>
+  <label for="favBase">Programa base</label>
+  <select id="favBase"></select>
+  <div class="fav-grid">
+    <div>
+      <label for="favTemp">Temperatura</label>
+      <select id="favTemp"></select>
+    </div>
+    <div>
+      <label for="favRpm">Centrifugado</label>
+      <select id="favRpm"></select>
+    </div>
+  </div>
+  <label for="favSecado">Secado</label>
+  <select id="favSecado"></select>
+  <label for="favNota">Nombre (opcional)</label>
+  <input type="text" id="favNota" maxlength="40" autocomplete="off" enterkeyhint="done" placeholder="Ej: Ropa del trabajo">
+  <div class="fav-botones">
+    <button type="button" class="fav-quitar" id="favQuitar" hidden>🗑️ Quitar</button>
+    <button type="button" class="fav-cancelar" id="favCancelar">Cancelar</button>
+    <button type="button" class="fav-guardar" id="favGuardar">Guardar</button>
+  </div>
+</dialog>
+
 <div class="aviso-version" id="avisoVersion" role="status" hidden>
   <span>🆕 Hay una versión nueva de la app.</span>
   <button type="button" class="no" id="btnLuego">Luego</button>

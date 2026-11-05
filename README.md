@@ -13,6 +13,10 @@ descripción en lenguaje natural de lo que vas a lavar.
 4. Si la API no está disponible o no hay clave, se usa el **motor local de palabras clave** como respaldo.
 5. Las últimas 5 recomendaciones quedan en **"Tus últimas consultas"**, guardadas solo en ese
    teléfono (`localStorage`). Al tocar una se muestra al instante, sin volver a consultar a la IA.
+6. **Mi Favorito:** la lavadora memoriza una combinación en su botón Favorito. Con
+   "⭐ Guardar como mi Favorito" (en cualquier tarjeta) se anota en la app cuál es: programa base,
+   temperatura, centrifugado, secado y un nombre. Queda solo en ese teléfono (`localStorage`,
+   clave `favorito`) y la tarjeta del programa Favorito muestra esos valores.
 
 ## Configurar OpenRouter
 

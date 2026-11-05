@@ -47,8 +47,10 @@ function recomendar(texto) {
   }).sort((a, b) => b.score - a.score);
 }
 
-// Inicializar al cargar
-function tarjetaPrograma(p, extra) {
+// Tarjeta de un programa. El programa Favorito se muestra con la combinación anotada en este
+// teléfono (si hay una); todas las tarjetas llevan el botón para guardar/cambiar el Favorito.
+function tarjetaPrograma(prog, extra) {
+  const p = prog.id === 'favorito' ? programaFavorito(prog) : prog;
   return `
     <div class="card">
       <div class="program-head">
@@ -68,6 +70,7 @@ function tarjetaPrograma(p, extra) {
       <div class="tips"><strong>Recomendaciones:</strong><ul>${p.tips.map(t => `<li>${t}</li>`).join('')}</ul></div>
       ${p.warning ? `<div class="warning">⚠️ ${p.warning}</div>` : ''}
       ${extra || ''}
+      ${botonFavorito(prog)}
     </div>`;
 }
 
@@ -317,6 +320,144 @@ function initHistorial() {
   pintarHistorial();
 }
 
+// Favorito: la lavadora tiene un botón "Favorito" que memoriza una combinación. Aquí se anota
+// cuál quedó guardada (programa base, temperatura, centrifugado, secado y un nombre), solo en
+// este teléfono (localStorage), para que la tarjeta del Favorito muestre los valores reales.
+const CLAVE_FAVORITO = 'favorito';
+const FAV_TEMPS = ['Frío', '20°C', '30°C', '40°C', '60°C', '90°C'];
+const FAV_RPMS = ['Sin centrifugado', '400 RPM', '600 RPM', '800 RPM', '1000 RPM', '1200 RPM', '1400 RPM'];
+const FAV_SECADOS = ['Sin secado', 'Auto Secado', 'Secado por tiempo'];
+const MAX_NOTA_FAV = 40;
+
+function programasBase() {
+  return PROGRAMAS.filter(p => p.id !== 'favorito');
+}
+
+// Devuelve el Favorito guardado o null si no hay / está dañado (solo valores de las listas).
+function leerFavorito() {
+  try {
+    const f = JSON.parse(localStorage.getItem(CLAVE_FAVORITO) || 'null');
+    if (!f || typeof f !== 'object') return null;
+    if (!programasBase().some(p => p.id === f.base)) return null;
+    if (!FAV_TEMPS.includes(f.temp) || !FAV_RPMS.includes(f.rpm) || !FAV_SECADOS.includes(f.secado)) return null;
+    return {
+      base: f.base, temp: f.temp, rpm: f.rpm, secado: f.secado,
+      nota: typeof f.nota === 'string' ? f.nota.slice(0, MAX_NOTA_FAV) : '',
+      fecha: typeof f.fecha === 'number' ? f.fecha : 0
+    };
+  } catch (e) { return null; }
+}
+
+// Valores iniciales del formulario a partir de un programa ("40°C (Frío–90°C)" → 40°C, etc.).
+function favoritoDesde(p) {
+  let temp = '40°C';
+  if (/^fr[ií]o/i.test(p.temp)) temp = 'Frío';
+  else {
+    const m = /(\d+)/.exec(p.temp);
+    if (m && FAV_TEMPS.includes(m[1] + '°C')) temp = m[1] + '°C';
+  }
+  const r = /(\d{3,4})/.exec(p.rpm);
+  let rpm = r && FAV_RPMS.includes(r[1] + ' RPM') ? r[1] + ' RPM' : '1000 RPM';
+  if (p.cat === 'Solo secado') rpm = 'Sin centrifugado';
+  const secado = p.id === 'tiemposecado' ? 'Secado por tiempo'
+    : (p.id === 'autosecado' || p.id === 'lavadosecado') ? 'Auto Secado' : 'Sin secado';
+  return { base: p.id, temp, rpm, secado, nota: '' };
+}
+
+// El programa Favorito con la combinación anotada (o tal cual, si no hay nada anotado).
+function programaFavorito(p) {
+  const f = leerFavorito();
+  if (!f) {
+    return { ...p, tips: [...p.tips, 'Toca “Anotar mi Favorito” para recordar aquí qué combinación guardaste en la lavadora.'] };
+  }
+  const base = PROGRAMAS.find(x => x.id === f.base);
+  const nombre = f.nota ? `«${escaparHtml(f.nota)}» · ` : '';
+  return {
+    ...p,
+    cat: 'Personalizado · tu combinación',
+    temp: f.temp, rpm: f.rpm, secado: f.secado, duracion: base.duracion,
+    desc: `${nombre}Basado en ${base.emoji} ${base.nombre}: ${base.desc}`,
+    tips: [
+      'En la lavadora, elige Favorito para usar esta combinación.',
+      'Si cambias el Favorito en la lavadora, actualízalo también aquí.',
+      ...base.tips
+    ],
+    warning: base.warning
+  };
+}
+
+function botonFavorito(p) {
+  const texto = p.id !== 'favorito' ? '⭐ Guardar como mi Favorito'
+    : leerFavorito() ? '✏️ Cambiar mi Favorito' : '⭐ Anotar mi Favorito';
+  return `<div class="fav-acciones"><button type="button" class="btn-fav" data-fav="${p.id}">${texto}</button></div>`;
+}
+
+function mostrarFavorito(mensaje) {
+  cancelarIA();
+  const area = document.getElementById('resultArea');
+  area.setAttribute('aria-busy', 'false');
+  area.innerHTML = tarjetaPrograma(PROGRAMAS.find(p => p.id === 'favorito'), `<div class="why">${mensaje}</div>`);
+  area.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function initFavorito() {
+  const dialogo = document.getElementById('favDialogo');
+  const area = document.getElementById('resultArea');
+  if (!dialogo || !area || typeof dialogo.showModal !== 'function') return;
+  const campo = id => document.getElementById(id);
+  const opciones = lista => lista.map(v => `<option value="${v}">${v}</option>`).join('');
+  campo('favBase').innerHTML = programasBase().map(p => `<option value="${p.id}">${p.emoji} ${p.nombre}</option>`).join('');
+  campo('favTemp').innerHTML = opciones(FAV_TEMPS);
+  campo('favRpm').innerHTML = opciones(FAV_RPMS);
+  campo('favSecado').innerHTML = opciones(FAV_SECADOS);
+
+  function abrir(desdeId) {
+    const guardado = leerFavorito();
+    const p = PROGRAMAS.find(x => x.id === desdeId);
+    // Desde la tarjeta del Favorito se edita lo guardado; desde otro programa se parte de ese.
+    const f = (desdeId === 'favorito' || !p) ? (guardado || favoritoDesde(programasBase()[0])) : favoritoDesde(p);
+    campo('favBase').value = f.base;
+    campo('favTemp').value = f.temp;
+    campo('favRpm').value = f.rpm;
+    campo('favSecado').value = f.secado;
+    campo('favNota').value = f.nota || '';
+    campo('favQuitar').hidden = !guardado;
+    dialogo.showModal();
+  }
+
+  // Al cambiar el programa base se proponen sus valores (la nota no se toca).
+  campo('favBase').addEventListener('change', () => {
+    const f = favoritoDesde(PROGRAMAS.find(x => x.id === campo('favBase').value));
+    campo('favTemp').value = f.temp;
+    campo('favRpm').value = f.rpm;
+    campo('favSecado').value = f.secado;
+  });
+
+  area.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-fav');
+    if (btn) abrir(btn.dataset.fav);
+  });
+
+  campo('favCancelar').addEventListener('click', () => dialogo.close());
+  campo('favGuardar').addEventListener('click', () => {
+    const fav = {
+      base: campo('favBase').value, temp: campo('favTemp').value, rpm: campo('favRpm').value,
+      secado: campo('favSecado').value, nota: campo('favNota').value.trim().slice(0, MAX_NOTA_FAV), fecha: Date.now()
+    };
+    try { localStorage.setItem(CLAVE_FAVORITO, JSON.stringify(fav)); } catch (e) {}
+    dialogo.close();
+    mostrarFavorito(leerFavorito()
+      ? '⭐ Guardé tu Favorito en este teléfono. Recuerda guardar la misma combinación en la lavadora.'
+      : '⚠️ No pude guardar el Favorito en este teléfono (¿navegación privada?).');
+  });
+  campo('favQuitar').addEventListener('click', () => {
+    if (!confirm('¿Quitar el Favorito anotado en este teléfono? (La lavadora no cambia.)')) return;
+    try { localStorage.removeItem(CLAVE_FAVORITO); } catch (e) {}
+    dialogo.close();
+    mostrarFavorito('🗑️ Quité el Favorito anotado en este teléfono.');
+  });
+}
+
 const CLAVE_TEMA = 'tema';
 const MEDIA_OSCURO = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -353,6 +494,7 @@ function initTema() {
 function init() {
   initTema();
   initHistorial();
+  initFavorito();
   const input = document.getElementById('loadInput');
   const btn = document.getElementById('btnRecomendar');
   const chips = document.getElementById('chips');

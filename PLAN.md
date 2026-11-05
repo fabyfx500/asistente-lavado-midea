@@ -6,11 +6,10 @@
 
 ## Estado actual
 
-- **Fase en curso:** Fase 1 (código listo; falta publicar y probar en el S21 FE)
-- **Próximo paso:** hacer `git push` (si no se hizo), verificar en producción que
-  `/manifest.webmanifest` y `/sw.js` respondan 200, e instalar en el S21 FE
-  (Chrome → botón "📲 Instalar app" o ⋮ → Instalar aplicación). Luego empezar la Fase 2:
-  motor local por palabra completa.
+- **Fase en curso:** Fase 1 (publicada y verificada en producción; falta probar en el S21 FE)
+- **Próximo paso:** Fabián instala la app en el S21 FE (Chrome → botón "📲 Instalar app" o
+  ⋮ → Instalar aplicación) y marca esa casilla. Luego empezar la Fase 2: motor local por
+  palabra completa (+ plurales simples) con pruebas de los casos del diagnóstico.
 - **Próxima sesión:** `3. Fase 2 – Errores y velocidad`
 
 ## Diagnóstico (revisión del 2026-11-04)
@@ -77,4 +76,4 @@
 |---|---|---|---|
 | 1. Setup inicial (optimización) | 2026-11-04 | Revisión completa del proyecto, diagnóstico y plan. Se crean `PLAN.md` y `CLAUDE.md`. | — |
 | 1. Setup inicial (optimización) | 2026-11-04 | Cambio a Claude Haiku 5.5 como modelo principal con respaldo gratuito; indicador "IA activa · Claude Haiku". Verificado en producción: responde Haiku en 1,7–2,5 s (antes 9 s); "sábanas planas" → Algodón. La clave de Vercel es la "Default key" de OpenRouter. `PLAN.md` no es público (404). | `9477ec8` |
-| 2. Fase 1 – PWA instalable | 2026-11-04 | PWA: manifest con 4 accesos rápidos, íconos (SVG + PNG), `sw.js` (red primero / caché / sin `/api`), modo sin conexión, botón "Instalar app", aviso de versión nueva, safe areas y `theme-color` según tema, `vercel.json`, `/?q=texto`. Se adelantó el escape del texto de la IA. Probado en Chrome (localhost): registro, caché, carga sin servidor y actualización v1→v2. El navegador integrado de la app no soporta service workers. Falta probar en el S21 FE. | ver `git log` |
+| 2. Fase 1 – PWA instalable | 2026-11-04 | PWA: manifest con 4 accesos rápidos, íconos (SVG + PNG), `sw.js` (red primero / caché / sin `/api`), modo sin conexión, botón "Instalar app", aviso de versión nueva, safe areas y `theme-color` según tema, `vercel.json`, `/?q=texto`. Se adelantó el escape del texto de la IA. Probado en Chrome (localhost): registro, caché, carga sin servidor y actualización v1→v2. El navegador integrado de la app no soporta service workers. Publicado y verificado en producción: manifest, `sw.js` (sin caché) e íconos responden 200; el service worker se activa, aparece "Instalar app" y la IA responde (Haiku). Falta probar en el S21 FE. | `1a6c495` |

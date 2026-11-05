@@ -7,8 +7,13 @@
 ## Estado actual
 
 - **Fase en curso:** Fase 3 (3 de 4 tareas hechas).
-- **Pendiente de Fabián (sesión 8):** poner un tope de gasto a la clave en OpenRouter
-  (Settings → API Keys → Credit limit) y actualizar el S21 FE a v7.
+- **Pendiente de Fabián (sesión 8):** bajar el tope de gasto de la "Default key" en OpenRouter
+  (Workspaces → Keys → ⋮ de la "Default key (f55)" → editar), hoy en **$100 TOTAL**: dejarlo en
+  US$2, mensual si se puede. Actualizar el S21 FE a v7.
+- **⚠️ La clave de OpenRouter vence el 2027-03-20** ("Default key (f55)", la que está en Vercel como
+  `OPENROUTER_API_KEY`). Ese día la IA deja de responder y la app queda en modo local. Antes de esa
+  fecha: quitarle el vencimiento al editarla, o crear una clave nueva, ponerla en Vercel y redeploy.
+  Recordárselo a Fabián en cualquier sesión desde febrero de 2027.
 - **Próximo paso:** Fase 3: cabeceras de seguridad (CSP, `Referrer-Policy`) en `vercel.json`. En
   `index.html` solo queda un `<script>` en línea (el tema antes de pintar); se puede permitir con su
   hash. `VERSION` de `sw.js` va en `v7`.

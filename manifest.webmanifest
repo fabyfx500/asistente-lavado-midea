@@ -1,0 +1,47 @@
+{
+  "id": "/",
+  "name": "Asistente de Lavado Midea",
+  "short_name": "Lavado Midea",
+  "description": "Te recomienda el mejor de los 14 programas de tu lavadora-secadora Midea MLSF-095B.",
+  "lang": "es-CL",
+  "dir": "ltr",
+  "start_url": "/?origen=app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f1f5f9",
+  "theme_color": "#0284c7",
+  "categories": ["utilities", "lifestyle"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Ropa deportiva",
+      "short_name": "Deportiva",
+      "url": "/?q=Ropa%20deportiva%20de%20poli%C3%A9ster",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Sábanas y toallas",
+      "short_name": "Sábanas",
+      "url": "/?q=S%C3%A1banas%20y%20toallas",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Solo secar la ropa",
+      "short_name": "Secar",
+      "url": "/?q=Solo%20secar%20la%20ropa",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Limpiar el tambor",
+      "short_name": "Limpieza",
+      "url": "/?q=Limpiar%20el%20tambor",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}

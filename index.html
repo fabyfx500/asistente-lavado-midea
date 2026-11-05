@@ -2,8 +2,17 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Cuéntale qué vas a lavar y te recomienda el mejor de los 14 programas de tu lavadora-secadora Midea MLSF-095B.">
+  <meta name="theme-color" id="metaThemeColor" content="#e0f2fe">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Lavado Midea">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <title>Asistente de Lavado - Midea</title>
   <script>
     // Aplica el tema ANTES de pintar para evitar parpadeo (FOUC).
@@ -12,6 +21,7 @@
         var p = localStorage.getItem('tema') || 'sistema';
         var oscuro = p === 'oscuro' || (p === 'sistema' && window.matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.setAttribute('data-theme', oscuro ? 'dark' : 'light');
+        document.getElementById('metaThemeColor').setAttribute('content', oscuro ? '#111d33' : '#e0f2fe');
       } catch (e) {}
     })();
   </script>
@@ -81,6 +91,8 @@
       color: var(--text);
       margin: 0;
       padding: 16px;
+      padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+               max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
       display: flex;
       justify-content: center;
     }
@@ -155,7 +167,27 @@
     .all-item:hover { border-color: var(--primary); color: var(--primary-dark); }
     footer { margin-top: 22px; text-align: center; font-size: .75rem; color: var(--text-muted); line-height: 1.5; }
     .empty { text-align: center; color: var(--text-muted); padding: 20px 10px; }
-    .topbar { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+    .topbar { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .btn-instalar {
+      margin-right: auto; border: 1px solid var(--badge-border); background: var(--badge-bg); color: var(--badge-text);
+      font-family: inherit; font-size: 0.72rem; font-weight: 700; padding: 6px 11px; border-radius: 999px; cursor: pointer;
+    }
+    .btn-instalar:hover { border-color: var(--primary); }
+    .ia-offline { color: var(--warn-text); background: var(--warn-bg); border-color: var(--warn); }
+    .aviso-version {
+      position: fixed; left: 50%; transform: translateX(-50%); z-index: 10;
+      bottom: max(16px, env(safe-area-inset-bottom)); width: calc(100% - 32px); max-width: 488px;
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px;
+      background: var(--card-bg); color: var(--text); border: 1px solid var(--border);
+      box-shadow: 0 10px 30px -8px var(--shadow); font-size: 0.85rem;
+    }
+    .aviso-version[hidden] { display: none; }
+    .aviso-version span { flex: 1; }
+    .aviso-version button {
+      border: none; border-radius: 999px; padding: 7px 12px; font-family: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+    }
+    .aviso-version .si { background: var(--primary); color: var(--btn-text); }
+    .aviso-version .no { background: transparent; color: var(--text-muted); }
     .theme-switch {
       display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px;
       background: var(--surface-2); border: 1px solid var(--border);
@@ -176,6 +208,7 @@
 
 <div class="container">
   <div class="topbar">
+    <button type="button" class="btn-instalar" id="btnInstalar" hidden>📲 Instalar app</button>
     <div class="theme-switch" id="themeSwitch" role="group" aria-label="Tema de la interfaz">
       <button type="button" data-tema="claro" aria-pressed="false" title="Tema claro">☀️ Claro</button>
       <button type="button" data-tema="oscuro" aria-pressed="false" title="Tema oscuro">🌙 Oscuro</button>
@@ -191,7 +224,7 @@
   </header>
 
   <label for="loadInput">¿Qué vas a lavar hoy?</label>
-  <textarea id="loadInput" rows="2" placeholder="Ej: Voy a lavar ropa deportiva de poliéster... o sábanas y toallas... o un suéter de lana..."></textarea>
+  <textarea id="loadInput" rows="2" enterkeyhint="send" autocapitalize="sentences" placeholder="Ej: Voy a lavar ropa deportiva de poliéster... o sábanas y toallas... o un suéter de lana..."></textarea>
   <button class="btn" id="btnRecomendar" type="button">✨ Recomendar programa</button>
 
   <div class="chips" id="chips"></div>
@@ -205,6 +238,12 @@
     Lavadora-Secadora Midea MLSF-095B · carga frontal · 9,5 kg lavado / 7 kg secado · 1400 RPM<br>
     Motor Inverter Quattro · Display Lunar · Stain Master · HealthGuard
   </footer>
+</div>
+
+<div class="aviso-version" id="avisoVersion" role="status" hidden>
+  <span>🆕 Hay una versión nueva de la app.</span>
+  <button type="button" class="no" id="btnLuego">Luego</button>
+  <button type="button" class="si" id="btnActualizar">Actualizar</button>
 </div>
 
 <script>
@@ -232,6 +271,11 @@
 
   function normalizar(s) {
     return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
+  }
+
+  // Escapa texto antes de meterlo en HTML (el texto de la IA no es de confianza).
+  function escaparHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
   function escaparRegex(s) {
@@ -285,7 +329,8 @@
 
   // Pide la recomendación al asistente IA (/api/recomendar). Si falla, usa el motor local.
   async function obtenerRecomendacion(texto) {
-    if (location.protocol !== 'file:') {
+    const sinConexion = navigator.onLine === false;
+    if (location.protocol !== 'file:' && !sinConexion) {
       try {
         const r = await fetch('/api/recomendar', {
           method: 'POST',
@@ -308,7 +353,8 @@
     const top = res[0];
     if (!top || top.score === 0) return null;
     const alternativas = res.slice(1).filter(r => r.score > 0).slice(0, 2).map(r => r.p);
-    return { principal: top.p, alternativas, origen: 'local', motivo: 'Detecté: ' + top.matched.slice(0, 4).join(', ') };
+    const prefijo = sinConexion ? 'Sin conexión, usé el motor local. ' : '';
+    return { principal: top.p, alternativas, origen: 'local', motivo: prefijo + 'Detecté: ' + top.matched.slice(0, 4).join(', ') };
   }
 
   async function renderResultado(texto) {
@@ -326,7 +372,7 @@
     const norm = normalizar(texto);
     const sobrecarga = ['casi todo', 'casi llena', 'lleno', 'llena', 'sobrecarga', 'mucha ropa', 'mucha carga', 'no cabe', 'ocupa todo', 'demasiada ropa', 'hasta el tope'].some(t => norm.includes(t));
     const emoji = rec.origen === 'IA' ? '🤖' : '💡';
-    const porQue = `<div class="why">${emoji} ${rec.motivo}</div>`
+    const porQue = `<div class="why">${emoji} ${escaparHtml(rec.motivo)}</div>`
       + (sobrecarga ? '<div class="warning">⚠️ Mencionaste que el tambor queda casi lleno: retira algunas prendas para que la ropa gire, se enjuague y se centrifuga bien (máx. ~9,5 kg en lavado y ~7 kg en secado).</div>' : '');
     let html = tarjetaPrograma(rec.principal, porQue);
 
@@ -357,6 +403,8 @@
   function aplicarTema(pref) {
     const oscuro = pref === 'oscuro' || (pref === 'sistema' && MEDIA_OSCURO.matches);
     document.documentElement.setAttribute('data-theme', oscuro ? 'dark' : 'light');
+    const meta = document.getElementById('metaThemeColor');
+    if (meta) meta.setAttribute('content', oscuro ? '#111d33' : '#e0f2fe');
     document.querySelectorAll('#themeSwitch button').forEach(b => {
       b.setAttribute('aria-pressed', String(b.dataset.tema === pref));
     });
@@ -415,6 +463,11 @@
         el.textContent = '💡 Modo local (abierta sin servidor)';
         return;
       }
+      if (navigator.onLine === false) {
+        el.className = 'ia-status ia-offline';
+        el.textContent = '📴 Sin conexión · uso el motor local';
+        return;
+      }
       try {
         const r = await fetch('/api/recomendar');
         if (r.ok) {
@@ -434,11 +487,80 @@
       }
     }
     verificarIA();
+    window.addEventListener('offline', verificarIA);
+    window.addEventListener('online', verificarIA);
 
-    renderResultado('');
+    // Accesos rápidos del ícono instalado (y enlaces compartidos): /?q=texto
+    const q = new URLSearchParams(location.search).get('q');
+    if (q) {
+      input.value = q;
+      renderResultado(q);
+    } else {
+      renderResultado('');
+    }
+  }
+
+  // Botón "Instalar app": Chrome/Android avisa con beforeinstallprompt cuando se puede instalar.
+  function initInstalar() {
+    const btn = document.getElementById('btnInstalar');
+    let aviso = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      aviso = e;
+      btn.hidden = false;
+    });
+    btn.addEventListener('click', async () => {
+      if (!aviso) return;
+      btn.hidden = true;
+      aviso.prompt();
+      try { await aviso.userChoice; } catch (e) {}
+      aviso = null;
+    });
+    window.addEventListener('appinstalled', () => { btn.hidden = true; aviso = null; });
+  }
+
+  // Service worker: funciona sin conexión y avisa cuando hay una versión nueva.
+  function initServiceWorker() {
+    if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
+    const aviso = document.getElementById('avisoVersion');
+    let recargar = false;
+
+    function mostrarAviso(reg) {
+      if (!reg.waiting || !navigator.serviceWorker.controller) return;
+      aviso.hidden = false;
+      document.getElementById('btnActualizar').onclick = () => {
+        recargar = true;
+        reg.waiting.postMessage('ACTIVAR');
+      };
+      document.getElementById('btnLuego').onclick = () => { aviso.hidden = true; };
+    }
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (recargar) location.reload();
+    });
+
+    window.addEventListener('load', async () => {
+      try {
+        const reg = await navigator.serviceWorker.register('/sw.js');
+        mostrarAviso(reg);
+        reg.addEventListener('updatefound', () => {
+          const nuevo = reg.installing;
+          if (!nuevo) return;
+          nuevo.addEventListener('statechange', () => {
+            if (nuevo.state === 'installed') mostrarAviso(reg);
+          });
+        });
+        // La app instalada puede quedar abierta días: busca versión nueva al volver a ella.
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') reg.update().catch(() => {});
+        });
+      } catch (e) { /* sin service worker la app sigue funcionando normal */ }
+    });
   }
 
   init();
+  initInstalar();
+  initServiceWorker();
 </script>
 
 </body>

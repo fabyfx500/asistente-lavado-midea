@@ -23,3 +23,6 @@ de verdad del avance.
 - Textos de la interfaz, commits y documentación en español.
 - La clave de OpenRouter vive solo en variables de entorno de Vercel; nunca en el front.
 - Mantener el motor local funcionando como respaldo sin conexión.
+- Es una PWA: al cambiar `index.html` o los íconos, subir `VERSION` en `sw.js` para que la app
+  instalada muestre "Hay una versión nueva". Si se agrega un archivo estático, sumarlo a `PRECACHE`.
+- Para probar el service worker usar Chrome (el navegador integrado de la app no lo soporta).

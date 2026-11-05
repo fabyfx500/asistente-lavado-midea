@@ -32,7 +32,16 @@ Si no hay créditos o falla, se usan automáticamente los modelos gratuitos (`:f
 ```
 index.html            # Front (UI + motor local de respaldo)
 api/recomendar.js     # Vercel Serverless Function (OpenRouter)
+manifest.webmanifest  # PWA: nombre, colores, íconos y accesos rápidos
+sw.js                 # Service worker: funciona sin conexión (sube VERSION al cambiar el front)
+icons/                # Íconos de la app (SVG fuente + PNG)
+vercel.json           # Cabeceras: sw.js sin caché, tipo del manifest
 ```
+
+## Instalar en el celular
+
+En Chrome (Android) abre la página y toca **📲 Instalar app** (o ⋮ → *Instalar aplicación*).
+Queda como app con ícono propio y funciona sin conexión usando el motor local.
 
 ## Desarrollo local
 

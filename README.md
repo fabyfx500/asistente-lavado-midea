@@ -12,12 +12,15 @@ descripción en lenguaje natural de lo que vas a lavar.
    los 14 programas (temperaturas, rpm y consejos) y devuelve el programa idóneo + el motivo.
 4. Si la API no está disponible o no hay clave, se usa el **motor local de palabras clave** como respaldo.
 
-## Configurar OpenRouter (gratis)
+## Configurar OpenRouter
 
-1. Crea una cuenta en <https://openrouter.ai> y genera una clave API (hay modelos `:free`).
+El modelo principal es **Claude Haiku 5.5** (`anthropic/claude-haiku-5.5`, ~US$0,0002 por consulta).
+Si no hay créditos o falla, se usan automáticamente los modelos gratuitos (`:free`).
+
+1. Crea una cuenta en <https://openrouter.ai>, genera una clave API y carga algunos créditos.
 2. En Vercel: **Project → Settings → Environment Variables** y agrega:
    - `OPENROUTER_API_KEY` = tu clave (obligatoria).
-   - `OPENROUTER_MODEL` = (opcional) fija un modelo, ej. `qwen/qwen2.5-72b-instruct:free`.
+   - `OPENROUTER_MODEL` = (opcional) cambia el modelo principal, ej. `anthropic/claude-sonnet-5.5`.
    - `PUBLIC_SITE_URL` = (opcional) tu dominio para las cabeceras de OpenRouter.
 3. Redeploy. Listo.
 

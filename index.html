@@ -419,9 +419,10 @@
         const r = await fetch('/api/recomendar');
         if (r.ok) {
           const d = await r.json();
-          if (d.claveConfigurada && d.modelosGratisDisponibles > 0) {
+          if (d.claveConfigurada) {
+            const nombre = String(d.modeloPrincipal || '').includes('claude-haiku') ? 'Claude Haiku' : 'IA';
             el.className = 'ia-status ia-on';
-            el.textContent = '🤖 IA activa · ' + d.modelosGratisDisponibles + ' modelos gratis';
+            el.textContent = '🤖 IA activa · ' + nombre;
             return;
           }
         }

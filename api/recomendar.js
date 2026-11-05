@@ -2,10 +2,14 @@
 // Requiere la variable de entorno OPENROUTER_API_KEY (Vercel > Settings > Environment Variables).
 // La clave NUNCA va en el HTML: se queda en el servidor.
 
-// Modelos gratuitos: se DESCUBREN dinámicamente desde OpenRouter (los IDs cambian seguido).
-// Orden preferido (se usa si el modelo existe en la lista real). Puedes forzar uno con OPENROUTER_MODEL.
+// Modelo principal (de pago, muy barato: ~US$0,0002 por consulta). Requiere créditos en OpenRouter.
+// Se puede cambiar con la variable OPENROUTER_MODEL. Si falla (sin créditos, caído, lento),
+// se usan los modelos gratuitos como respaldo.
+const MODELO_PRINCIPAL = process.env.OPENROUTER_MODEL || 'anthropic/claude-haiku-5.5';
+
+// Modelos gratuitos de respaldo: se DESCUBREN dinámicamente desde OpenRouter (los IDs cambian seguido).
+// Orden preferido (se usa si el modelo existe en la lista real).
 const PREFERIDOS = [
-  process.env.OPENROUTER_MODEL,
   'z-ai/glm-5.2:free',
   'qwen/qwen3.8-27b:free',
   'google/gemma-4-31b-it:free',
@@ -33,17 +37,56 @@ async function listarGratis() {
   } catch (e) { return []; }
 }
 
+// El modelo principal va SIEMPRE primero (aunque no sea gratuito); después, los gratuitos de respaldo.
 async function obtenerCandidatos(max) {
   const gratis = await listarGratis();
-  let lista;
+  let respaldo;
   if (gratis.length) {
     const pref = PREFERIDOS.filter(m => gratis.includes(m));
     const resto = gratis.filter(m => !pref.includes(m));
-    lista = pref.concat(resto);
+    respaldo = pref.concat(resto);
   } else {
-    lista = PREFERIDOS;
+    respaldo = PREFERIDOS;
   }
-  return lista.slice(0, max || 5);
+  return [MODELO_PRINCIPAL].concat(respaldo.filter(m => m !== MODELO_PRINCIPAL)).slice(0, max || 4);
+}
+
+const ESQUEMA = {
+  type: 'json_schema',
+  json_schema: {
+    name: 'recomendacion',
+    strict: true,
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        motivo: { type: 'string' },
+        alternativas: { type: 'array', items: { type: 'string' } }
+      },
+      required: ['id', 'motivo', 'alternativas'],
+      additionalProperties: false
+    }
+  }
+};
+
+// Parámetros según el modelo: los modelos Claude 5.x no aceptan "temperature" y sí salida
+// estructurada y esfuerzo de razonamiento; los gratuitos varían, así que se les envía lo básico.
+function cuerpoPara(modelo, texto) {
+  const base = {
+    model: modelo,
+    messages: [
+      { role: 'system', content: SISTEMA },
+      { role: 'user', content: texto }
+    ]
+  };
+  if (modelo.endsWith(':free')) {
+    base.temperature = 0.2;
+  } else {
+    base.max_tokens = 1024;
+    base.reasoning = { effort: 'low' };
+    base.response_format = ESQUEMA;
+  }
+  return base;
 }
 
 const PROGRAMAS = [
@@ -96,8 +139,9 @@ module.exports = async function handler(req, res) {
     res.status(200).json({
       ok: true,
       claveConfigurada: !!process.env.OPENROUTER_API_KEY,
+      modeloPrincipal: MODELO_PRINCIPAL,
       modelosGratisDisponibles: gratis.length,
-      candidatos: await obtenerCandidatos(5)
+      candidatos: await obtenerCandidatos(4)
     });
     return;
   }
@@ -122,7 +166,7 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const candidatos = await obtenerCandidatos(5);
+  const candidatos = await obtenerCandidatos(4);
   const errores = [];
   for (const modelo of candidatos) {
     try {
@@ -134,14 +178,7 @@ module.exports = async function handler(req, res) {
           'HTTP-Referer': process.env.PUBLIC_SITE_URL || 'https://asistente-lavado-midea.vercel.app',
           'X-Title': 'Asistente Lavado Midea'
         },
-        body: JSON.stringify({
-          model: modelo,
-          temperature: 0.2,
-          messages: [
-            { role: 'system', content: SISTEMA },
-            { role: 'user', content: texto }
-          ]
-        }),
+        body: JSON.stringify(cuerpoPara(modelo, texto)),
         signal: AbortSignal.timeout(15000)
       });
 

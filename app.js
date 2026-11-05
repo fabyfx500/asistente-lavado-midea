@@ -136,7 +136,8 @@ function pintarRecomendacion(rec, sobrecarga, pendiente) {
   const area = document.getElementById('resultArea');
   const emoji = rec.origen === 'IA' ? '🤖' : '💡';
   const nota = pendiente ? '<span class="ia-pendiente"> · ⏳ consultando a la IA…</span>' : '';
-  const porQue = `<div class="why">${emoji} ${escaparHtml(rec.motivo)}${nota}</div>`
+  const guardada = rec.guardada ? `🕘 Del historial (${escaparHtml(fechaCorta(rec.guardada))}) · ` : '';
+  const porQue = `<div class="why">${guardada}${emoji} ${escaparHtml(rec.motivo)}${nota}</div>`
     + (sobrecarga ? '<div class="warning">⚠️ Mencionaste que el tambor queda casi lleno: retira algunas prendas para que la ropa gire, se enjuague y se centrifugue bien (máx. ~9,5 kg en lavado y ~7 kg en secado).</div>' : '');
   let html = tarjetaPrograma(rec.principal, porQue);
 
@@ -169,8 +170,7 @@ async function renderResultado(texto) {
     area.innerHTML = '<div class="card empty">✍️ Escribe qué vas a lavar para que te recomiende un programa.</div>';
     return;
   }
-  const norm = normalizar(texto);
-  const sobrecarga = ['casi todo', 'casi llena', 'lleno', 'llena', 'sobrecarga', 'mucha ropa', 'mucha carga', 'no cabe', 'ocupa todo', 'demasiada ropa', 'hasta el tope'].some(t => coincide(norm, t));
+  const sobrecarga = haySobrecarga(texto);
   const local = recomendacionLocal(texto);
 
   // Sin servidor o sin conexión: solo motor local.
@@ -180,6 +180,7 @@ async function renderResultado(texto) {
     if (!local) { area.innerHTML = SIN_PRENDA; return; }
     if (sinConexion) local.motivo = 'Sin conexión, usé el motor local. ' + local.motivo;
     pintarRecomendacion(local, sobrecarga, false);
+    guardarEnHistorial(texto, local);
     return;
   }
 
@@ -210,6 +211,7 @@ async function renderResultado(texto) {
   if (ia) {
     estadoIA('ia-on', '🤖 IA activa · ' + nombreModelo(ia.modelo));
     pintarRecomendacion(ia, sobrecarga, false);
+    guardarEnHistorial(texto, ia);
     return;
   }
   if (fallo === 'sin-clave') estadoIA('ia-off', '💡 Modo local (IA no configurada)');
@@ -218,6 +220,101 @@ async function renderResultado(texto) {
   else estadoIA('ia-off', '💡 Modo local (sin conexión a la IA)');
   if (!local) { area.setAttribute('aria-busy', 'false'); area.innerHTML = SIN_PRENDA; return; }
   pintarRecomendacion(local, sobrecarga, false);
+  guardarEnHistorial(texto, local);
+}
+
+function haySobrecarga(texto) {
+  const norm = normalizar(texto);
+  return ['casi todo', 'casi llena', 'lleno', 'llena', 'sobrecarga', 'mucha ropa', 'mucha carga', 'no cabe', 'ocupa todo', 'demasiada ropa', 'hasta el tope'].some(t => coincide(norm, t));
+}
+
+// Historial: las últimas recomendaciones quedan guardadas solo en este teléfono (localStorage).
+// Se guarda la recomendación final (la de la IA, o la local si la IA no respondió); elegir un
+// programa a mano no se guarda. Al tocar una, se muestra al instante sin volver a consultar.
+const CLAVE_HISTORIAL = 'historial';
+const MAX_HISTORIAL = 5;
+
+function leerHistorial() {
+  try {
+    const datos = JSON.parse(localStorage.getItem(CLAVE_HISTORIAL) || '[]');
+    if (!Array.isArray(datos)) return [];
+    return datos.filter(h => h && typeof h.texto === 'string' && typeof h.fecha === 'number'
+      && PROGRAMAS.some(p => p.id === h.id)).slice(0, MAX_HISTORIAL);
+  } catch (e) { return []; }
+}
+
+function guardarEnHistorial(texto, rec) {
+  const entrada = {
+    texto: texto.trim().slice(0, 200),
+    id: rec.principal.id,
+    alt: rec.alternativas.map(p => p.id),
+    motivo: String(rec.motivo || '').slice(0, 300),
+    origen: rec.origen,
+    fecha: Date.now()
+  };
+  // La misma consulta no se repite: queda solo la más reciente, arriba.
+  const clave = normalizar(entrada.texto).trim();
+  const lista = [entrada, ...leerHistorial().filter(h => normalizar(h.texto).trim() !== clave)].slice(0, MAX_HISTORIAL);
+  try { localStorage.setItem(CLAVE_HISTORIAL, JSON.stringify(lista)); } catch (e) {}
+  pintarHistorial();
+}
+
+// "hoy, 14:32", "ayer, 09:10" o "3 nov".
+function fechaCorta(ms) {
+  const d = new Date(ms);
+  const dia = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const dias = Math.round((dia(new Date()) - dia(d)) / 86400000);
+  const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  if (dias === 0) return 'hoy, ' + hora;
+  if (dias === 1) return 'ayer, ' + hora;
+  return d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+}
+
+function pintarHistorial() {
+  const cont = document.getElementById('historial');
+  const lista = document.getElementById('historialLista');
+  if (!cont || !lista) return;
+  const items = leerHistorial();
+  cont.hidden = items.length === 0;
+  lista.innerHTML = items.map((h, i) => {
+    const p = PROGRAMAS.find(x => x.id === h.id);
+    return `<button class="hist-item" type="button" data-i="${i}">`
+      + `<span class="hist-prog">${p.emoji} ${p.nombre}</span>`
+      + `<span class="hist-fecha">${h.origen === 'IA' ? '🤖' : '💡'} ${escaparHtml(fechaCorta(h.fecha))}</span>`
+      + `<span class="hist-texto">${escaparHtml(h.texto)}</span>`
+      + '</button>';
+  }).join('');
+}
+
+function mostrarDelHistorial(h) {
+  cancelarIA();
+  const principal = PROGRAMAS.find(p => p.id === h.id);
+  const alternativas = (Array.isArray(h.alt) ? h.alt : [])
+    .map(id => PROGRAMAS.find(p => p.id === id))
+    .filter(p => p && p !== principal);
+  document.getElementById('loadInput').value = h.texto;
+  const rec = { principal, alternativas, origen: h.origen === 'IA' ? 'IA' : 'local', motivo: h.motivo || '', guardada: h.fecha };
+  pintarRecomendacion(rec, haySobrecarga(h.texto), false);
+  document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function initHistorial() {
+  const lista = document.getElementById('historialLista');
+  const borrar = document.getElementById('btnBorrarHistorial');
+  if (!lista || !borrar) return;
+  lista.addEventListener('click', (e) => {
+    const btn = e.target.closest('.hist-item');
+    if (!btn) return;
+    const h = leerHistorial()[Number(btn.dataset.i)];
+    if (h) mostrarDelHistorial(h);
+    else pintarHistorial();
+  });
+  borrar.addEventListener('click', () => {
+    if (!confirm('¿Borrar las últimas consultas guardadas en este teléfono?')) return;
+    try { localStorage.removeItem(CLAVE_HISTORIAL); } catch (e) {}
+    pintarHistorial();
+  });
+  pintarHistorial();
 }
 
 const CLAVE_TEMA = 'tema';
@@ -255,6 +352,7 @@ function initTema() {
 
 function init() {
   initTema();
+  initHistorial();
   const input = document.getElementById('loadInput');
   const btn = document.getElementById('btnRecomendar');
   const chips = document.getElementById('chips');

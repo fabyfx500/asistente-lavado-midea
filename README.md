@@ -11,6 +11,8 @@ descripción en lenguaje natural de lo que vas a lavar.
 3. Esa función consulta la IA de **OpenRouter** con un *system prompt* que contiene
    los 14 programas (tomados de `programas.js`) y devuelve el programa idóneo + el motivo.
 4. Si la API no está disponible o no hay clave, se usa el **motor local de palabras clave** como respaldo.
+5. Las últimas 5 recomendaciones quedan en **"Tus últimas consultas"**, guardadas solo en ese
+   teléfono (`localStorage`). Al tocar una se muestra al instante, sin volver a consultar a la IA.
 
 ## Configurar OpenRouter
 

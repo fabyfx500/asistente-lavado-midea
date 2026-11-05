@@ -26,3 +26,5 @@ de verdad del avance.
 - Es una PWA: al cambiar `index.html`, `styles.css`, `app.js`, `programas.js` o los íconos, subir `VERSION` en `sw.js` para que la app
   instalada muestre "Hay una versión nueva". Si se agrega un archivo estático, sumarlo a `PRECACHE`.
 - Para probar el service worker usar Chrome (el navegador integrado de la app no lo soporta).
+- Hay CSP en `vercel.json`: el `<script>` del tema en `index.html` va permitido por su hash. Si se
+  cambia, correr `node pruebas/cabeceras.mjs` y pegar el hash nuevo. Sin `style=""` ni `onclick=""`.

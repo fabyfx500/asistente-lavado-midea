@@ -1,0 +1,3 @@
+# index.html siempre con saltos de línea LF: la CSP de vercel.json permite el script del tema
+# por su hash, y un CRLF cambiaría el hash.
+*.html text eol=lf

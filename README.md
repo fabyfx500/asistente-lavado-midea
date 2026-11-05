@@ -45,7 +45,7 @@ api/recomendar.js     # Vercel Serverless Function (OpenRouter)
 manifest.webmanifest  # PWA: nombre, colores, íconos y accesos rápidos
 sw.js                 # Service worker: funciona sin conexión (sube VERSION al cambiar el front)
 icons/                # Íconos de la app (SVG fuente + PNG)
-vercel.json           # Cabeceras: sw.js sin caché, tipo del manifest
+vercel.json           # Cabeceras: seguridad (CSP, Referrer-Policy…), sw.js sin caché, tipo del manifest
 ```
 
 ## Instalar en el celular
@@ -56,7 +56,11 @@ Queda como app con ícono propio y funciona sin conexión usando el motor local.
 ## Desarrollo local
 
 - Abre `index.html` directamente (funciona con el motor local, sin IA).
-- Pruebas: `node pruebas/motor.mjs` (motor local) y `node pruebas/servidor.mjs` (API con OpenRouter simulado).
+- Pruebas: `node pruebas/motor.mjs` (motor local), `node pruebas/servidor.mjs` (API con OpenRouter simulado)
+  y `node pruebas/cabeceras.mjs` (la CSP de `vercel.json` calza con `index.html`).
+- La CSP solo deja correr scripts y estilos de archivos propios. El único `<script>` en línea (el tema)
+  está permitido por su hash: si lo cambias, `node pruebas/cabeceras.mjs` te da el hash nuevo para
+  `vercel.json`. No uses `style="…"` ni `onclick="…"` en el HTML: la CSP los bloquea.
 - Para probar la IA localmente: `vercel dev` y define `OPENROUTER_API_KEY` en un `.env`.
 
 ## Los 14 programas

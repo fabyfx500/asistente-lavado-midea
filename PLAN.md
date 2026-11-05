@@ -6,23 +6,15 @@
 
 ## Estado actual
 
-- **Fase en curso:** Fase 4 (opcional): Web Share Target hecho y probado en local; falta publicar.
-  Con eso se completan todas las fases del plan.
-- **Tope de gasto:** la "Default key (f55)" tiene un límite de **US$2** (lo bajó Fabián desde $100
-  el 2026-11-05; se cambia en OpenRouter → Workspaces → Keys → ⋮ de la clave → editar). Si se
-  alcanza, la IA deja de responder y la app queda en modo local.
-- **⚠️ La clave de OpenRouter vence el 2027-03-20** ("Default key (f55)", la que está en Vercel como
-  `OPENROUTER_API_KEY`). Ese día la IA deja de responder y la app queda en modo local. Antes de esa
-  fecha: quitarle el vencimiento al editarla, o crear una clave nueva, ponerla en Vercel y redeploy.
-  Recordárselo a Fabián en cualquier sesión desde febrero de 2027.
-- **Próximo paso:** publicar el Web Share Target (`git push`) y verificar en producción que el
-  manifest trae `share_target` y que `/?titulo=…&texto=…` recomienda. Luego, en el S21 FE: actualizar
-  a v11 (pie de página "Versión de la app: v11") y probar "Compartir" → "Lavado Midea" desde otra
-  app. Ojo: Android solo agrega la app al menú Compartir cuando Chrome regenera la app instalada
-  (WebAPK) con el manifest nuevo; eso puede tardar hasta un día tras abrirla. Si no aparece, se
-  desinstala y se vuelve a instalar. Recordar: hay CSP (nada de `style=""` ni `onclick=""`; si se
-  toca el script del tema, `node pruebas/cabeceras.mjs`). `VERSION` de `sw.js` va en `v11`.
-- **Próxima sesión:** `13. Fase 4 – Publicar Web Share Target`
+- **Fase en curso:** todas las fases del plan están hechas y publicadas (v11).
+- **Próximo paso:** en el S21 FE, abrir la app y actualizar a v11 (pie de página "Versión de la
+  app: v11"); luego probar "Compartir" → "Lavado Midea" desde otra app. Android solo agrega la app
+  al menú Compartir cuando Chrome regenera la app instalada (WebAPK) con el manifest nuevo; puede
+  tardar hasta un día tras abrirla. Si no aparece, desinstalar y volver a instalar. Después, solo
+  queda la Decisión pendiente (mejorar el prompt) o ideas nuevas de Fabián. Recordar: hay CSP (nada
+  de `style=""` ni `onclick=""`; si se toca el script del tema, `node pruebas/cabeceras.mjs`).
+  `VERSION` de `sw.js` va en `v11`.
+- **Próxima sesión:** `13. Prueba en el S21 FE / mejoras`
 - **Usuarios:** solo 3 personas del mismo departamento (Fabián, su pareja y su cuñada), sin cuentas
   ni login. Límite de la API: 15/min y 150/día por IP, 600/día en total (por instancia de Vercel).
 
@@ -87,7 +79,7 @@
 
 - [x] Historial de últimas recomendaciones (publicado 2026-11-05)
 - [x] Guardar configuración "Favorito" (publicado 2026-11-05)
-- [x] Web Share Target (compartir texto a la app desde Android) (hecho 2026-11-05, falta publicar)
+- [x] Web Share Target (compartir texto a la app desde Android) (publicado 2026-11-05)
 
 ## Bitácora de sesiones
 
@@ -113,3 +105,4 @@
 | 11. Fase 4 – Favorito | 2026-11-05 | Publicado y verificado en producción: `sw.js` en v9; `app.js`, `styles.css` y `programas.js` iguales al repo; `index.html` trae el formulario del Favorito; CSP y `Referrer-Policy` presentes; `PLAN.md` y `/pruebas/` dan 404; POST sin `Origin` → 403; Haiku responde ("mi programa favorito guardado" → Favorito, "sábanas planas y fundas" → Algodón). En Chrome con la v8 apareció el aviso; "Actualizar" dejó solo la caché v9. "Sábanas y toallas" → Algodón con "Claude Haiku 5.5" (1,5 s); "Guardar como mi Favorito" abrió el formulario prellenado (Algodón, 40°C, 1400 RPM, sin secado), se guardó con 60°C y la tarjeta del Favorito lo mostró; se mantuvo al recargar. Sin errores en la consola. Se borraron los datos de prueba. Falta actualizar el S21 FE a v9. | — |
 | 11. Fase 4 – Favorito | 2026-11-05 | A pedido de Fabián, el pie de página muestra "Versión de la app: vN" para confirmar que la app se actualizó. Sale de la `VERSION` de `sw.js`: la página se la pide al service worker activo (mensaje `VERSION` con `MessageChannel`, máx. 1,5 s); si no contesta (los anteriores a v10 no sabían), la deduce del nombre de la caché cuando hay una sola; si no, no muestra nada. En la primera visita se muestra cuando el service worker toma el control. `sw.js` → v10. CLAUDE.md actualizado. 29 + 37 + 15 pruebas OK. Probado en Chrome con servidor local: primera visita → v10; con una v11 de prueba esperando sigue diciendo v10 y al tocar "Actualizar" pasa a v11. Publicado y verificado en producción: `sw.js` en v10 con el mensaje nuevo, `app.js` y `styles.css` iguales al repo, `CLAUDE.md` da 404. En Chrome con la v9 se veía "v9" y el aviso; "Actualizar" dejó solo la caché v10 y el pie en "v10". Después, Fabián actualizó el S21 FE a v10 y el pie dice "Versión de la app: v10". | `63053cf` |
 | 12. Fase 4 – Web Share Target | 2026-11-05 | La app instalada aparece en el menú "Compartir" de Android: `manifest.webmanifest` declara `share_target` (GET a `/` con `titulo`, `texto` y `enlace`; GET para no depender del service worker ni chocar con `form-action 'none'`). `app.js` (`textoCompartido`) une título y texto (si uno contiene al otro, queda el más largo), quita los enlaces, junta espacios y corta en 300 caracteres; limpia la dirección con `history.replaceState` (recargar no repite la consulta) y recomienda como siempre (local al instante + IA, y queda en el historial). Si solo llegó un enlace, pide describir la prenda y deja el cursor en el cuadro. `?q=` sigue igual. `VERSION` de `sw.js` → v11. Nuevo `pruebas/compartir.mjs` (23 casos OK, incluye que el manifest use los mismos nombres); 29 del motor, 37 del servidor y 15 de cabeceras OK. Probado en el navegador de la app con un servidor local con las cabeceras de `vercel.json` (IA simulada): "Polerón deportivo" + "100% poliéster https://…" → consulta "Polerón deportivo. 100% poliéster" → 20°C con "Claude Haiku 5.5", dirección queda en `/`; solo enlace → aviso y foco en el cuadro; `?q=Un suéter de lana` → Lana; sin errores de CSP. Falta publicar y probar en el S21 FE. | `400e710` |
+| 12. Fase 4 – Web Share Target | 2026-11-05 | Publicado y verificado en producción: `sw.js` en v11; el manifest trae `share_target` (GET a `/` con `titulo`, `texto`, `enlace`); `app.js` igual al repo; `PLAN.md`, `CLAUDE.md` y `/pruebas/` dan 404; POST sin `Origin` → 403; Haiku responde ("Polerón deportivo. 100% poliéster" → 20°C, 1,7 s en la función). En el navegador, `/?titulo=Polerón deportivo&texto=100% poliéster https://…` armó la consulta "Polerón deportivo. 100% poliéster" → 20°C con "Claude Haiku 5.5" y la dirección quedó en `/`; sin errores de CSP. Se borró la consulta de prueba. Falta probar Compartir en el S21 FE. | — |

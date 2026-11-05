@@ -150,6 +150,7 @@
       background-color: var(--warn-bg); border-left: 4px solid var(--warn); padding: 10px 12px;
       margin-top: 12px; font-size: 0.85rem; border-radius: 6px; color: var(--warn-text);
     }
+    .ia-pendiente { opacity: 0.75; font-style: italic; }
     .why { margin-top: 12px; font-size: 0.82rem; color: var(--text-muted); background: var(--why-bg); border-radius: 8px; padding: 8px 10px; }
     .alt-title { margin-top: 16px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: .5px; }
     .alt-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
@@ -338,52 +339,64 @@
       </div>`;
   }
 
-  // Pide la recomendación al asistente IA (/api/recomendar). Si falla, usa el motor local.
-  async function obtenerRecomendacion(texto) {
-    const sinConexion = navigator.onLine === false;
-    if (location.protocol !== 'file:' && !sinConexion) {
-      try {
-        const r = await fetch('/api/recomendar', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ texto })
-        });
-        if (r.ok) {
-          const data = await r.json();
-          const principal = PROGRAMAS.find(p => p.id === data.id);
-          if (principal) {
-            const alternativas = (data.alternativas || [])
-              .map(id => PROGRAMAS.find(p => p.id === id))
-              .filter(Boolean);
-            return { principal, alternativas, origen: 'IA', motivo: data.motivo || 'Recomendación del asistente IA.' };
-          }
-        }
-      } catch (e) { /* sin conexión o sin clave: seguimos con el motor local */ }
-    }
+  // Respuesta instantánea: primero se muestra el motor local y, si la IA responde antes de
+  // LIMITE_IA_MS, se reemplaza por su recomendación. Si no, queda el resultado local.
+  const LIMITE_IA_MS = 8000;
+  let consulta = 0;       // sube con cada consulta o vista manual: descarta respuestas viejas
+  let controlIA = null;   // AbortController de la consulta a la IA en curso
+
+  function cancelarIA() {
+    consulta++;
+    if (controlIA) { controlIA.abort(); controlIA = null; }
+  }
+
+  // Indicador de estado de la IA (se actualiza con cada consulta, sin GET al cargar).
+  function estadoIA(clase, texto) {
+    const el = document.getElementById('iaStatus');
+    if (!el) return;
+    el.className = 'ia-status ' + clase;
+    el.textContent = texto;
+  }
+
+  function estadoInicialIA() {
+    if (location.protocol === 'file:') estadoIA('ia-off', '💡 Modo local (abierta sin servidor)');
+    else if (navigator.onLine === false) estadoIA('ia-offline', '📴 Sin conexión · uso el motor local');
+    else estadoIA('ia-off', '🤖 Asistente IA · responde al consultar');
+  }
+
+  function recomendacionLocal(texto) {
     const res = recomendar(texto);
     const top = res[0];
     if (!top || top.score === 0) return null;
     const alternativas = res.slice(1).filter(r => r.score > 0).slice(0, 2).map(r => r.p);
-    const prefijo = sinConexion ? 'Sin conexión, usé el motor local. ' : '';
-    return { principal: top.p, alternativas, origen: 'local', motivo: prefijo + 'Detecté: ' + top.matched.slice(0, 4).join(', ') };
+    return { principal: top.p, alternativas, origen: 'local', motivo: 'Detecté: ' + top.matched.slice(0, 4).join(', ') };
   }
 
-  async function renderResultado(texto) {
+  // Pide la recomendación al asistente IA (/api/recomendar). Lanza error si no hay respuesta útil.
+  async function recomendacionIA(texto, signal) {
+    const r = await fetch('/api/recomendar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texto }),
+      signal
+    });
+    if (!r.ok) throw new Error(r.status === 503 ? 'sin-clave' : 'http-' + r.status);
+    const data = await r.json();
+    const principal = PROGRAMAS.find(p => p.id === data.id);
+    if (!principal) throw new Error('respuesta-invalida');
+    const alternativas = (data.alternativas || [])
+      .map(id => PROGRAMAS.find(p => p.id === id))
+      .filter(p => p && p !== principal);
+    return { principal, alternativas, origen: 'IA', modelo: data.modelo || '', motivo: data.motivo || 'Recomendación del asistente IA.' };
+  }
+
+  const SIN_PRENDA = '<div class="card empty">🤔 No detecté una prenda clara. Describe mejor la ropa (ej: "ropa deportiva de poliéster", "sábanas y toallas", "un suéter de lana") o toca un ejemplo de arriba.</div>';
+
+  function pintarRecomendacion(rec, sobrecarga, pendiente) {
     const area = document.getElementById('resultArea');
-    if (!texto.trim()) {
-      area.innerHTML = '<div class="card empty">✍️ Escribe qué vas a lavar para que te recomiende un programa.</div>';
-      return;
-    }
-    area.innerHTML = '<div class="card empty">⏳ Analizando tu descripción…</div>';
-    const rec = await obtenerRecomendacion(texto);
-    if (!rec) {
-      area.innerHTML = '<div class="card empty">🤔 No detecté una prenda clara. Describe mejor la ropa (ej: "ropa deportiva de poliéster", "sábanas y toallas", "un suéter de lana") o toca un ejemplo de arriba.</div>';
-      return;
-    }
-    const norm = normalizar(texto);
-    const sobrecarga = ['casi todo', 'casi llena', 'lleno', 'llena', 'sobrecarga', 'mucha ropa', 'mucha carga', 'no cabe', 'ocupa todo', 'demasiada ropa', 'hasta el tope'].some(t => coincide(norm, t));
     const emoji = rec.origen === 'IA' ? '🤖' : '💡';
-    const porQue = `<div class="why">${emoji} ${escaparHtml(rec.motivo)}</div>`
+    const nota = pendiente ? '<span class="ia-pendiente"> · ⏳ consultando a la IA…</span>' : '';
+    const porQue = `<div class="why">${emoji} ${escaparHtml(rec.motivo)}${nota}</div>`
       + (sobrecarga ? '<div class="warning">⚠️ Mencionaste que el tambor queda casi lleno: retira algunas prendas para que la ropa gire, se enjuague y se centrifugue bien (máx. ~9,5 kg en lavado y ~7 kg en secado).</div>' : '');
     let html = tarjetaPrograma(rec.principal, porQue);
 
@@ -395,13 +408,75 @@
       html += '</div>';
     }
     area.innerHTML = html;
+    area.setAttribute('aria-busy', String(!!pendiente));
 
     area.querySelectorAll('.alt-item').forEach(btn => {
       btn.addEventListener('click', () => {
+        cancelarIA();
         const p = PROGRAMAS.find(x => x.id === btn.dataset.id);
+        area.setAttribute('aria-busy', 'false');
         area.innerHTML = tarjetaPrograma(p, '<div class="why">👆 Mostrando el programa que elegiste.</div>');
       });
     });
+  }
+
+  async function renderResultado(texto) {
+    cancelarIA();
+    const miConsulta = consulta;
+    const area = document.getElementById('resultArea');
+    area.setAttribute('aria-busy', 'false');
+    if (!texto.trim()) {
+      area.innerHTML = '<div class="card empty">✍️ Escribe qué vas a lavar para que te recomiende un programa.</div>';
+      return;
+    }
+    const norm = normalizar(texto);
+    const sobrecarga = ['casi todo', 'casi llena', 'lleno', 'llena', 'sobrecarga', 'mucha ropa', 'mucha carga', 'no cabe', 'ocupa todo', 'demasiada ropa', 'hasta el tope'].some(t => coincide(norm, t));
+    const local = recomendacionLocal(texto);
+
+    // Sin servidor o sin conexión: solo motor local.
+    const sinConexion = navigator.onLine === false;
+    if (location.protocol === 'file:' || sinConexion) {
+      estadoInicialIA();
+      if (!local) { area.innerHTML = SIN_PRENDA; return; }
+      if (sinConexion) local.motivo = 'Sin conexión, usé el motor local. ' + local.motivo;
+      pintarRecomendacion(local, sobrecarga, false);
+      return;
+    }
+
+    // 1) Resultado local al instante (o aviso de espera si el motor local no reconoce nada).
+    if (local) pintarRecomendacion(local, sobrecarga, true);
+    else {
+      area.innerHTML = '<div class="card empty">⏳ Analizando tu descripción…</div>';
+      area.setAttribute('aria-busy', 'true');
+    }
+
+    // 2) Consulta a la IA con corte a los 8 s.
+    const ctrl = new AbortController();
+    controlIA = ctrl;
+    let porTiempo = false;
+    const corte = setTimeout(() => { porTiempo = true; ctrl.abort(); }, LIMITE_IA_MS);
+    let ia = null, fallo = '';
+    try {
+      ia = await recomendacionIA(texto, ctrl.signal);
+    } catch (e) {
+      fallo = porTiempo ? 'tiempo' : (e && e.message) || 'error';
+    } finally {
+      clearTimeout(corte);
+    }
+    if (miConsulta !== consulta) return; // hubo otra consulta o el usuario eligió un programa
+    controlIA = null;
+
+    // 3) Reemplazar con la IA o quedarse con el local.
+    if (ia) {
+      estadoIA('ia-on', '🤖 IA activa · ' + (ia.modelo.includes('claude-haiku') ? 'Claude Haiku' : 'IA'));
+      pintarRecomendacion(ia, sobrecarga, false);
+      return;
+    }
+    if (fallo === 'sin-clave') estadoIA('ia-off', '💡 Modo local (IA no configurada)');
+    else if (fallo === 'tiempo') estadoIA('ia-off', '💡 Modo local (la IA tardó demasiado)');
+    else estadoIA('ia-off', '💡 Modo local (sin conexión a la IA)');
+    if (!local) { area.setAttribute('aria-busy', 'false'); area.innerHTML = SIN_PRENDA; return; }
+    pintarRecomendacion(local, sobrecarga, false);
   }
 
   const CLAVE_TEMA = 'tema';
@@ -454,8 +529,10 @@
 
     allList.innerHTML = PROGRAMAS.map(p => `<button class="all-item" type="button" data-id="${p.id}">${p.emoji} ${p.nombre}</button>`).join('');
     allList.querySelectorAll('.all-item').forEach(b => b.addEventListener('click', () => {
+      cancelarIA();
       const p = PROGRAMAS.find(x => x.id === b.dataset.id);
       const area = document.getElementById('resultArea');
+      area.setAttribute('aria-busy', 'false');
       area.innerHTML = tarjetaPrograma(p, '<div class="why">👆 Mostrando el programa que elegiste de la lista.</div>');
       area.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }));
@@ -466,40 +543,10 @@
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); run(); }
     });
 
-    async function verificarIA() {
-      const el = document.getElementById('iaStatus');
-      if (!el) return;
-      if (location.protocol === 'file:') {
-        el.className = 'ia-status ia-off';
-        el.textContent = '💡 Modo local (abierta sin servidor)';
-        return;
-      }
-      if (navigator.onLine === false) {
-        el.className = 'ia-status ia-offline';
-        el.textContent = '📴 Sin conexión · uso el motor local';
-        return;
-      }
-      try {
-        const r = await fetch('/api/recomendar');
-        if (r.ok) {
-          const d = await r.json();
-          if (d.claveConfigurada) {
-            const nombre = String(d.modeloPrincipal || '').includes('claude-haiku') ? 'Claude Haiku' : 'IA';
-            el.className = 'ia-status ia-on';
-            el.textContent = '🤖 IA activa · ' + nombre;
-            return;
-          }
-        }
-        el.className = 'ia-status ia-off';
-        el.textContent = '💡 Modo local (IA no configurada)';
-      } catch (e) {
-        el.className = 'ia-status ia-off';
-        el.textContent = '💡 Modo local (sin conexión a la IA)';
-      }
-    }
-    verificarIA();
-    window.addEventListener('offline', verificarIA);
-    window.addEventListener('online', verificarIA);
+    // Sin GET al cargar: el indicador se confirma con la primera consulta.
+    estadoInicialIA();
+    window.addEventListener('offline', estadoInicialIA);
+    window.addEventListener('online', estadoInicialIA);
 
     // Accesos rápidos del ícono instalado (y enlaces compartidos): /?q=texto
     const q = new URLSearchParams(location.search).get('q');

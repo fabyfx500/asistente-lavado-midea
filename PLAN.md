@@ -7,6 +7,13 @@
 ## Estado actual
 
 - **Fase en curso:** todas las fases del plan están hechas y publicadas (v11).
+- **Tope de gasto:** la "Default key (f55)" tiene un límite de **US$2** (lo bajó Fabián desde $100
+  el 2026-11-05; se cambia en OpenRouter → Workspaces → Keys → ⋮ de la clave → editar). Si se
+  alcanza, la IA deja de responder y la app queda en modo local.
+- **⚠️ La clave de OpenRouter vence el 2027-03-20** ("Default key (f55)", la que está en Vercel como
+  `OPENROUTER_API_KEY`). Ese día la IA deja de responder y la app queda en modo local. Antes de esa
+  fecha: quitarle el vencimiento al editarla, o crear una clave nueva, ponerla en Vercel y redeploy.
+  Recordárselo a Fabián en cualquier sesión desde febrero de 2027.
 - **Próximo paso:** en el S21 FE, abrir la app y actualizar a v11 (pie de página "Versión de la
   app: v11"); luego probar "Compartir" → "Lavado Midea" desde otra app. Android solo agrega la app
   al menú Compartir cuando Chrome regenera la app instalada (WebAPK) con el manifest nuevo; puede

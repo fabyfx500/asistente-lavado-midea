@@ -6,8 +6,8 @@
 
 ## Estado actual
 
-- **Fase en curso:** todas las fases del plan están hechas. La mejora del prompt (sesión 13, v12)
-  está hecha y probada en local, **falta publicarla**.
+- **Fase en curso:** todas las fases del plan y la mejora del prompt (sesión 13) están hechas y
+  publicadas (v12).
 - **Tope de gasto:** la "Default key (f55)" tiene un límite de **US$2** (lo bajó Fabián desde $100
   el 2026-11-05; se cambia en OpenRouter → Workspaces → Keys → ⋮ de la clave → editar). Si se
   alcanza, la IA deja de responder y la app queda en modo local.
@@ -15,13 +15,11 @@
   `OPENROUTER_API_KEY`). Ese día la IA deja de responder y la app queda en modo local. Antes de esa
   fecha: quitarle el vencimiento al editarla, o crear una clave nueva, ponerla en Vercel y redeploy.
   Recordárselo a Fabián en cualquier sesión desde febrero de 2027.
-- **Próximo paso:** publicar la v12 (prompt nuevo) y verificar en producción con Haiku real:
-  probar 6–8 consultas variadas ("sábanas con mancha de vino", "chaleco de lana y quiero secarlo",
-  "una camisa que necesito seca hoy", "el plumón", "ropa deportiva", "limpiar el tambor") y revisar que
-  el ajuste y el consejo tengan sentido y que responda en < 8 s. Si algo falla, afinar el prompt o los
-  ejemplos en `api/recomendar.js`. Después, Fabián actualiza el S21 FE a v12.
-  Recordar: hay CSP (nada de `style=""` ni `onclick=""`; si se toca el script del tema,
-  `node pruebas/cabeceras.mjs`). `VERSION` de `sw.js` va en `v12`.
+- **Próximo paso:** no queda nada pendiente del plan. Fabián actualiza el S21 FE a v12 y usa la app
+  unos días; si alguna recomendación, ajuste o consejo no le convence, anotar la consulta exacta y
+  afinar el prompt o los ejemplos en `api/recomendar.js` (los ajustes permitidos están en `programas.js`).
+  Preguntarle si tiene nuevas ideas. Recordar: hay CSP (nada de `style=""` ni `onclick=""`; si se toca
+  el script del tema, `node pruebas/cabeceras.mjs`). `VERSION` de `sw.js` va en `v12`.
 - **Manual oficial:** PDF de Midea Chile (259 MB) en
   `https://repecommercemideachile.blob.core.windows.net/$web/FFC/Lavadora-Secadora/MLSF-095BW-MLSF-095BS/MLSF-095BW-MLSF-095BS__Manual de usuario`
   (tabla de programas en la pág. 22, descripciones en la 23, funciones en la 24–28). Ojo: su fila de
@@ -30,7 +28,7 @@
   WhatsApp no comparte mensajes de texto hacia otras apps; para probar sirve una nota (Samsung
   Notes/Keep → Compartir → Texto) o texto seleccionado en Chrome. Si "Lavado Midea" no aparece,
   revisar que esté en v11 y, si hace falta, reinstalar la app.
-- **Próxima sesión:** `14. Publicar el prompt nuevo`
+- **Próxima sesión:** `14. <lo que pida Fabián>`
 - **Usuarios:** solo 3 personas del mismo departamento (Fabián, su pareja y su cuñada), sin cuentas
   ni login. Límite de la API: 15/min y 150/día por IP, 600/día en total (por instancia de Vercel).
 
@@ -124,3 +122,4 @@
 | 12. Fase 4 – Web Share Target | 2026-11-05 | La app instalada aparece en el menú "Compartir" de Android: `manifest.webmanifest` declara `share_target` (GET a `/` con `titulo`, `texto` y `enlace`; GET para no depender del service worker ni chocar con `form-action 'none'`). `app.js` (`textoCompartido`) une título y texto (si uno contiene al otro, queda el más largo), quita los enlaces, junta espacios y corta en 300 caracteres; limpia la dirección con `history.replaceState` (recargar no repite la consulta) y recomienda como siempre (local al instante + IA, y queda en el historial). Si solo llegó un enlace, pide describir la prenda y deja el cursor en el cuadro. `?q=` sigue igual. `VERSION` de `sw.js` → v11. Nuevo `pruebas/compartir.mjs` (23 casos OK, incluye que el manifest use los mismos nombres); 29 del motor, 37 del servidor y 15 de cabeceras OK. Probado en el navegador de la app con un servidor local con las cabeceras de `vercel.json` (IA simulada): "Polerón deportivo" + "100% poliéster https://…" → consulta "Polerón deportivo. 100% poliéster" → 20°C con "Claude Haiku 5.5", dirección queda en `/`; solo enlace → aviso y foco en el cuadro; `?q=Un suéter de lana` → Lana; sin errores de CSP. Falta publicar y probar en el S21 FE. | `400e710` |
 | 12. Fase 4 – Web Share Target | 2026-11-05 | Publicado y verificado en producción: `sw.js` en v11; el manifest trae `share_target` (GET a `/` con `titulo`, `texto`, `enlace`); `app.js` igual al repo; `PLAN.md`, `CLAUDE.md` y `/pruebas/` dan 404; POST sin `Origin` → 403; Haiku responde ("Polerón deportivo. 100% poliéster" → 20°C, 1,7 s en la función). En el navegador, `/?titulo=Polerón deportivo&texto=100% poliéster https://…` armó la consulta "Polerón deportivo. 100% poliéster" → 20°C con "Claude Haiku 5.5" y la dirección quedó en `/`; sin errores de CSP. Se borró la consulta de prueba. Falta probar Compartir en el S21 FE. | — |
 | 13. Mejorar el prompt de la IA | 2026-11-05 | Se descargó el manual oficial de Midea Chile (MLSF-095B/S-W). `programas.js`: duraciones de la tabla del manual (Algodón ≈3 h 40, Lavado y Secado ≈5 h 15, etc.), resumen `ia` con cargas máximas, consejos nuevos en las tarjetas (cargas de Lana/20°C/Vapor/Rápido, 1h WD de Rápido 15', no secar plumones, cloro en Limpieza, cómo memorizar el Favorito) y campo nuevo `ajustes` (temperaturas, centrifugado máx., secados, funciones y escenarios de Stain Master que admite cada programa). `api/recomendar.js`: prompt con lo que se ajusta en cada programa, datos del manual (pasos del panel, ropa que no se seca, Stain Master, Prelavado/Enjuague) y 6 ejemplos resueltos; la IA devuelve además `ajuste` y `consejo` (esquema JSON con valores cerrados); el servidor descarta lo que el programa no admite (un solo Stain Master, máx. 2 funciones, "No aplica" → null) y corta el consejo en 200. Prompt ≈2.700 tokens (≈US$0,0003 por consulta). Página: bloque "🎛️ Ajuste sugerido para tu carga" con chips y "💬" consejo (escapados), también en el historial. `VERSION` de `sw.js` → v12. README actualizado. Pruebas: 29 del motor, 47 del servidor (11 nuevas), 15 de cabeceras y 23 de compartir OK. Probado en el navegador de la app con servidor local (cabeceras de `vercel.json`, función real, IA simulada): chips y consejo, ajuste imposible filtrado (Lana 90°C/secado), sin ajuste en Limpieza/respaldo, historial guarda y muestra el ajuste, historial dañado no rompe, HTML escapado, tema oscuro y 375 px sin scroll lateral; sin errores de CSP. Falta publicar y probar con Haiku real. | `8a04f7c` |
+| 13. Mejorar el prompt de la IA | 2026-11-05 | Publicado (git push → deploy automático de Vercel) y verificado en producción: `app.js`, `styles.css`, `programas.js` y `sw.js` iguales al repo, `sw.js` en v12, CSP presente, `PLAN.md`/`CLAUDE.md`/`/pruebas/` dan 404, POST sin `Origin` → 403. 10 consultas reales con Haiku 5.5, todas 200 en 1,3–3 s dentro de la función (1,5–3,2 s en total), con ajuste y consejo con sentido: "sábanas planas y fundas" → Algodón 60°C/1400; "polera blanca con mancha de salsa" → Mixto + Stain Master: Alimentos; "chaleco de lana y quiero secarlo" → Lana 20°C/600/Sin secado y aviso de no secar; "camisa seca para esta noche" → Rápido 15' con "Seco normal" y el tip de 1h WD; "ropa de mi guagua" → Vapor + Enjuague adicional; "overol con grasa y barro" → Algodón + Prelavado + Stain Master: Exteriores; "limpiar el tambor" → Limpieza 90°C; "tambor lleno de jeans y poleras" → Mixto; "cortinas sintéticas" → Delicado sin secado. En el navegador (producción): "polera blanca con mancha de café" → Mixto con chips y consejo y quedó en el historial; apareció el aviso de versión nueva y "Actualizar" dejó solo la caché v12 y el pie en "v12". Sin errores en la consola. Se borró la consulta de prueba. Falta actualizar el S21 FE a v12. | — |

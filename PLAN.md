@@ -6,7 +6,7 @@
 
 ## Estado actual
 
-- **Fase en curso:** Fase 4 (opcional): "Favorito" hecho y probado en local, falta publicarlo.
+- **Fase en curso:** Fase 4 (opcional): "Favorito" publicado. Sigue Web Share Target.
 - **Tope de gasto:** la "Default key (f55)" tiene un límite de **US$2** (lo bajó Fabián desde $100
   el 2026-11-05; se cambia en OpenRouter → Workspaces → Keys → ⋮ de la clave → editar). Si se
   alcanza, la IA deja de responder y la app queda en modo local.
@@ -14,11 +14,10 @@
   `OPENROUTER_API_KEY`). Ese día la IA deja de responder y la app queda en modo local. Antes de esa
   fecha: quitarle el vencimiento al editarla, o crear una clave nueva, ponerla en Vercel y redeploy.
   Recordárselo a Fabián en cualquier sesión desde febrero de 2027.
-- **Próximo paso:** publicar "Favorito" (`git push`), verificar en producción y que Fabián actualice
-  el S21 FE a v9. Después, Fase 4: Web Share Target. Recordar: hay CSP, así que nada de `style=""`
+- **Próximo paso:** Fase 4: Web Share Target (antes, confirmar que Fabián actualizó el S21 FE a v9). Recordar: hay CSP, así que nada de `style=""`
   ni `onclick=""`, y si se toca el script del tema hay que actualizar su hash
   (`node pruebas/cabeceras.mjs`). `VERSION` de `sw.js` va en `v9`.
-- **Próxima sesión:** `12. Fase 4 – Web Share Target` (o seguir en la 11 si solo falta publicar)
+- **Próxima sesión:** `12. Fase 4 – Web Share Target`
 - **Usuarios:** solo 3 personas del mismo departamento (Fabián, su pareja y su cuñada), sin cuentas
   ni login. Límite de la API: 15/min y 150/día por IP, 600/día en total (por instancia de Vercel).
 
@@ -82,7 +81,7 @@
 ## Fase 4 — Extras (opcional)
 
 - [x] Historial de últimas recomendaciones (publicado 2026-11-05)
-- [x] Guardar configuración "Favorito" (hecho 2026-11-05, falta publicar)
+- [x] Guardar configuración "Favorito" (publicado 2026-11-05)
 - [ ] Web Share Target (compartir texto a la app desde Android)
 
 ## Bitácora de sesiones
@@ -106,3 +105,4 @@
 | 10. Fase 4 – Historial | 2026-11-05 | Nueva sección "Tus últimas consultas" (entre el resultado y la lista de programas): guarda en `localStorage` (clave `historial`) las 5 recomendaciones finales más recientes (la de la IA, o la local si la IA no respondió), con programa, alternativas, motivo, origen y fecha; la misma consulta no se repite (queda la más nueva arriba). Elegir un programa a mano o una consulta sin prenda clara no se guardan. Al tocar una se muestra al instante con "🕘 Del historial (hoy, 14:32)" y su texto vuelve al cuadro, sin llamar a la IA. Botón "🗑️ Borrar" con confirmación. Se ignoran datos dañados. Sin `style=""`/`onclick=""` (CSP); el script del tema no cambió. `VERSION` de `sw.js` → v8. README actualizado. 29 del motor, 37 del servidor y 15 de cabeceras OK. Probado en el navegador de la app con un servidor local con las cabeceras de `vercel.json` (IA simulada): guarda, no repite, máx. 5, se mantiene al recargar, texto con HTML queda escapado, fallo de IA guarda el local, "ayer"/"2 nov", Borrar, tema oscuro y 375 px sin scroll lateral; sin errores de CSP. Falta publicar y probar en el S21 FE. | `99563ea` |
 | 10. Fase 4 – Historial | 2026-11-05 | Publicado y verificado en producción: `sw.js` en v8; `app.js` y `styles.css` iguales al repo; `index.html` trae la sección del historial; CSP presente; `PLAN.md` y `/pruebas/` dan 404; POST sin `Origin` → 403; Haiku responde ("sábanas planas y fundas" → Algodón, 1,8 s en la función). En Chrome con la v7 apareció el aviso; "Actualizar" dejó solo la caché v8. "Sábanas y toallas" → Algodón y "un suéter de lana" → Lana con "Claude Haiku 5.5" (1,5 y 3,1 s); ambas quedaron en "Tus últimas consultas", se mantuvieron al recargar y al tocar una se mostró al instante sin llamar a la API. Sin errores en la consola. Se borraron las consultas de prueba. Después, Fabián actualizó el S21 FE a v8 sin problemas. | — |
 | 11. Fase 4 – Favorito | 2026-11-05 | "Mi Favorito": la lavadora memoriza una combinación en su botón Favorito y ahora se anota en la app. Toda tarjeta trae "⭐ Guardar como mi Favorito" (en la del Favorito: "Anotar" o "Cambiar mi Favorito"), que abre un `<dialog>` con programa base, temperatura (Frío–90°C), centrifugado (sin–1400 RPM), secado (sin / Auto / por tiempo) y nombre opcional (40 caracteres), prellenado desde ese programa; al cambiar el programa base se proponen sus valores. Se guarda en `localStorage` (clave `favorito`), se valida contra las listas al leer (datos dañados = sin Favorito) y el nombre se escapa. La tarjeta del Favorito muestra la combinación, "Basado en …", la duración, consejos y advertencia del programa base; sirve igual desde la lista, la IA, el motor local y el historial. "🗑️ Quitar" con confirmación. Sin `<form>` (la CSP tiene `form-action 'none'`), sin `style=""`/`onclick=""`; el script del tema no cambió. `VERSION` de `sw.js` → v9. README actualizado. 29 del motor, 37 del servidor y 15 de cabeceras OK. Probado en el navegador de la app con un servidor local con las cabeceras de `vercel.json` (IA simulada): prellenado (Algodón → 40°C/1400; Lana → 30°C/600), guardar, recargar, editar, historial, Quitar, datos dañados, texto con HTML escapado, tema oscuro y 375 px sin scroll lateral; sin errores de CSP. Falta publicar y probar en el S21 FE. | `98f41f5` |
+| 11. Fase 4 – Favorito | 2026-11-05 | Publicado y verificado en producción: `sw.js` en v9; `app.js`, `styles.css` y `programas.js` iguales al repo; `index.html` trae el formulario del Favorito; CSP y `Referrer-Policy` presentes; `PLAN.md` y `/pruebas/` dan 404; POST sin `Origin` → 403; Haiku responde ("mi programa favorito guardado" → Favorito, "sábanas planas y fundas" → Algodón). En Chrome con la v8 apareció el aviso; "Actualizar" dejó solo la caché v9. "Sábanas y toallas" → Algodón con "Claude Haiku 5.5" (1,5 s); "Guardar como mi Favorito" abrió el formulario prellenado (Algodón, 40°C, 1400 RPM, sin secado), se guardó con 60°C y la tarjeta del Favorito lo mostró; se mantuvo al recargar. Sin errores en la consola. Se borraron los datos de prueba. Falta actualizar el S21 FE a v9. | — |

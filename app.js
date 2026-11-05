@@ -458,6 +458,32 @@ function initFavorito() {
   });
 }
 
+// ── Compartir a la app (Web Share Target) ──
+// Android abre /?titulo=…&texto=…&enlace=… cuando se comparte algo a la app instalada
+// (ver "share_target" en manifest.webmanifest). Se arma la consulta con el título y el texto,
+// sin los enlaces (no dicen nada de la prenda). Devuelve null si no vino nada compartido.
+const MAX_COMPARTIDO = 300;
+const PATRON_ENLACE = /\b(?:https?:\/\/|www\.)\S+/gi;
+
+function textoCompartido(params) {
+  const campos = ['titulo', 'texto', 'enlace'];
+  if (!campos.some(c => params.has(c))) return null;
+  const limpiar = (s) => String(s || '').replace(PATRON_ENLACE, ' ').replace(/\s+/g, ' ').trim();
+  const titulo = limpiar(params.get('titulo'));
+  const texto = limpiar(params.get('texto'));
+  let union;
+  if (!titulo || !texto) union = titulo || texto;
+  else if (normalizar(texto).includes(normalizar(titulo))) union = texto;
+  else if (normalizar(titulo).includes(normalizar(texto))) union = titulo;
+  else union = titulo.replace(/[.:;,\s]+$/, '') + '. ' + texto;
+  if (union.length > MAX_COMPARTIDO) {
+    const corte = union.slice(0, MAX_COMPARTIDO);
+    const espacio = corte.lastIndexOf(' ');
+    union = (espacio > MAX_COMPARTIDO * 0.6 ? corte.slice(0, espacio) : corte).trim();
+  }
+  return union;
+}
+
 const CLAVE_TEMA = 'tema';
 const MEDIA_OSCURO = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -529,8 +555,25 @@ function init() {
   window.addEventListener('offline', estadoInicialIA);
   window.addEventListener('online', estadoInicialIA);
 
+  // Algo compartido desde otra app de Android (menú "Compartir" → Lavado Midea).
+  const params = new URLSearchParams(location.search);
+  const compartido = textoCompartido(params);
+  if (compartido !== null) {
+    // Se quita de la dirección para que recargar no vuelva a consultar lo mismo.
+    try { history.replaceState(null, '', '/'); } catch (e) {}
+    if (compartido) {
+      input.value = compartido;
+      renderResultado(compartido);
+    } else {
+      const area = document.getElementById('resultArea');
+      area.innerHTML = '<div class="card empty">🔗 Me llegó solo un enlace. Escribe qué prenda vas a lavar (ej: "polerón de algodón") y te recomiendo un programa.</div>';
+      input.focus();
+    }
+    return;
+  }
+
   // Accesos rápidos del ícono instalado (y enlaces compartidos): /?q=texto
-  const q = new URLSearchParams(location.search).get('q');
+  const q = params.get('q');
   if (q) {
     input.value = q;
     renderResultado(q);

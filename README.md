@@ -17,6 +17,10 @@ descripción en lenguaje natural de lo que vas a lavar.
    "⭐ Guardar como mi Favorito" (en cualquier tarjeta) se anota en la app cuál es: programa base,
    temperatura, centrifugado, secado y un nombre. Queda solo en ese teléfono (`localStorage`,
    clave `favorito`) y la tarjeta del programa Favorito muestra esos valores.
+7. **Compartir a la app:** con la app instalada en Android, desde otra app (una tienda, WhatsApp, una
+   nota) se toca "Compartir" → "Lavado Midea" y se recomienda un programa con ese texto. Llega como
+   `/?titulo=…&texto=…&enlace=…` (`share_target` del manifest); los enlaces se descartan y, si solo
+   llegó un enlace, la app pide describir la prenda.
 
 ## Configurar OpenRouter
 
@@ -62,8 +66,9 @@ Queda como app con ícono propio y funciona sin conexión usando el motor local.
 ## Desarrollo local
 
 - Abre `index.html` directamente (funciona con el motor local, sin IA).
-- Pruebas: `node pruebas/motor.mjs` (motor local), `node pruebas/servidor.mjs` (API con OpenRouter simulado)
-  y `node pruebas/cabeceras.mjs` (la CSP de `vercel.json` calza con `index.html`).
+- Pruebas: `node pruebas/motor.mjs` (motor local), `node pruebas/servidor.mjs` (API con OpenRouter simulado),
+  `node pruebas/cabeceras.mjs` (la CSP de `vercel.json` calza con `index.html`) y
+  `node pruebas/compartir.mjs` (texto compartido desde otra app).
 - La CSP solo deja correr scripts y estilos de archivos propios. El único `<script>` en línea (el tema)
   está permitido por su hash: si lo cambias, `node pruebas/cabeceras.mjs` te da el hash nuevo para
   `vercel.json`. No uses `style="…"` ni `onclick="…"` en el HTML: la CSP los bloquea.

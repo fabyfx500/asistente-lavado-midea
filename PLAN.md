@@ -6,7 +6,7 @@
 
 ## Estado actual
 
-- **Fase en curso:** Fase 3 terminada. Sigue la Fase 4 (opcional).
+- **Fase en curso:** Fase 4 (opcional): historial hecho (falta publicarlo).
 - **Tope de gasto:** la "Default key (f55)" tiene un límite de **US$2** (lo bajó Fabián desde $100
   el 2026-11-05; se cambia en OpenRouter → Workspaces → Keys → ⋮ de la clave → editar). Si se
   alcanza, la IA deja de responder y la app queda en modo local.
@@ -14,11 +14,12 @@
   `OPENROUTER_API_KEY`). Ese día la IA deja de responder y la app queda en modo local. Antes de esa
   fecha: quitarle el vencimiento al editarla, o crear una clave nueva, ponerla en Vercel y redeploy.
   Recordárselo a Fabián en cualquier sesión desde febrero de 2027.
-- **Próximo paso:** Fase 4 (opcional): historial de las últimas recomendaciones (guardado en el
-  teléfono con `localStorage`). Recordar: hay CSP, así que nada de `style=""` ni `onclick=""`, y si
-  se toca el script del tema hay que actualizar su hash (`node pruebas/cabeceras.mjs`). `VERSION` de
-  `sw.js` va en `v7`.
-- **Próxima sesión:** `10. Fase 4 – Historial`
+- **Próximo paso:** publicar el historial (push a `main`), verificar en producción (`sw.js` en v8,
+  "Tus últimas consultas" aparece tras una consulta y se mantiene al recargar) y actualizar el S21 FE.
+  Después, Fase 4: guardar configuración "Favorito". Recordar: hay CSP, así que nada de `style=""`
+  ni `onclick=""`, y si se toca el script del tema hay que actualizar su hash
+  (`node pruebas/cabeceras.mjs`). `VERSION` de `sw.js` va en `v8`.
+- **Próxima sesión:** `11. Fase 4 – Favorito` (o publicar el historial en esta misma sesión 10)
 - **Usuarios:** solo 3 personas del mismo departamento (Fabián, su pareja y su cuñada), sin cuentas
   ni login. Límite de la API: 15/min y 150/día por IP, 600/día en total (por instancia de Vercel).
 
@@ -81,7 +82,7 @@
 
 ## Fase 4 — Extras (opcional)
 
-- [ ] Historial de últimas recomendaciones
+- [x] Historial de últimas recomendaciones (falta publicar)
 - [ ] Guardar configuración "Favorito"
 - [ ] Web Share Target (compartir texto a la app desde Android)
 
@@ -103,3 +104,4 @@
 | 8. Fase 3 – Límite de uso de la API | 2026-11-05 | Publicado y verificado en producción: `sw.js` en v7; POST sin `Origin` o desde otro sitio → 403 "Origen no permitido"; con el `Origin` propio Haiku responde ("sábanas planas y fundas" → Algodón, 1,2 s en la función). El límite funciona con la IP que entrega Vercel: con consultas vacías (cuentan pero no llaman a la IA) la 16.ª del minuto da 429 con `Retry-After`. El GET de diagnóstico sigue OK; `PLAN.md` y `/pruebas/` dan 404. En Chrome con la v6 apareció el aviso; "Actualizar" dejó solo la caché v7; dentro del minuto bloqueado se vio "Modo local (muchas consultas…)" y, pasado el minuto, "Sábanas y toallas" → Algodón con "Claude Haiku 5.5". Falta el S21 FE y el tope de gasto en OpenRouter. Después, Fabián bajó el tope de la "Default key" de $100 a US$2 y actualizó el S21 FE a v7 sin problemas. Se anotó que la clave vence el 2027-03-20. | — |
 | 9. Fase 3 – Cabeceras de seguridad | 2026-11-05 | `vercel.json`: CSP para todas las rutas (`default-src 'self'`, scripts y estilos solo de archivos propios, el script del tema en línea permitido por su hash, sin `unsafe-inline`/`unsafe-eval`, `frame-ancestors 'none'`, `form-action`/`base-uri`/`object-src` cerrados), `Referrer-Policy: strict-origin-when-cross-origin` (con `no-referrer` Chrome mandaría `Origin: null` y la API daría 403), `X-Content-Type-Options`, `X-Frame-Options` y `Permissions-Policy`. Nuevo `pruebas/cabeceras.mjs` (15 casos OK): revisa el hash contra `index.html` y que no haya `style=""` ni `onclick=""`; si el script del tema cambia, da el hash nuevo. `.gitattributes` deja los `.html` en LF (con CRLF cambiaría el hash). README y CLAUDE.md actualizados. 29 del motor y 37 del servidor OK. Probado en Chrome con un servidor local que aplica las cabeceras de `vercel.json` (función real, IA simulada): sin errores de CSP, el tema oscuro se aplica antes de pintar, estilos y 14 programas OK, "sábanas y toallas" → Algodón con "Claude Haiku 5.5", y un script inyectado y un `onerror` en línea quedan bloqueados. Falta publicar y verificar en producción. | `000341c` |
 | 9. Fase 3 – Cabeceras de seguridad | 2026-11-05 | Publicado y verificado en producción: llegan la CSP (el hash calza con el `index.html` publicado), `Referrer-Policy`, `X-Content-Type-Options`, `X-Frame-Options` y `Permissions-Policy`; Vercel ya agrega HSTS. `sw.js` sigue en v7 sin caché; `PLAN.md` y `/pruebas/` dan 404; el POST sin `Origin` sigue en 403. En Chrome la página carga sin errores de CSP, con estilos y 14 programas, y "Sábanas y toallas" → Algodón con "Claude Haiku 5.5" (la consulta sigue pasando el control de origen). `.gitattributes` se agregó a `.vercelignore` (se publicaba). | — |
+| 10. Fase 4 – Historial | 2026-11-05 | Nueva sección "Tus últimas consultas" (entre el resultado y la lista de programas): guarda en `localStorage` (clave `historial`) las 5 recomendaciones finales más recientes (la de la IA, o la local si la IA no respondió), con programa, alternativas, motivo, origen y fecha; la misma consulta no se repite (queda la más nueva arriba). Elegir un programa a mano o una consulta sin prenda clara no se guardan. Al tocar una se muestra al instante con "🕘 Del historial (hoy, 14:32)" y su texto vuelve al cuadro, sin llamar a la IA. Botón "🗑️ Borrar" con confirmación. Se ignoran datos dañados. Sin `style=""`/`onclick=""` (CSP); el script del tema no cambió. `VERSION` de `sw.js` → v8. README actualizado. 29 del motor, 37 del servidor y 15 de cabeceras OK. Probado en el navegador de la app con un servidor local con las cabeceras de `vercel.json` (IA simulada): guarda, no repite, máx. 5, se mantiene al recargar, texto con HTML queda escapado, fallo de IA guarda el local, "ayer"/"2 nov", Borrar, tema oscuro y 375 px sin scroll lateral; sin errores de CSP. Falta publicar y probar en el S21 FE. | `99563ea` |

@@ -77,6 +77,56 @@ async function obtenerCandidatos(max) {
   return [MODELO_PRINCIPAL].concat(respaldo.filter(m => m !== MODELO_PRINCIPAL)).slice(0, max || MAX_MODELOS);
 }
 
+// Los 14 programas vienen del archivo compartido con la página (campo "ia" = resumen para el
+// prompt; "ajustes" = lo que se puede sugerir en cada uno).
+const PROGRAMAS = require('../programas.js');
+
+const IDS = PROGRAMAS.map(p => p.id);
+
+// Valores que la IA puede sugerir (pasos del panel según el manual). "No aplica" = el programa
+// no deja elegirlo; el servidor lo convierte en null.
+const NO_APLICA = 'No aplica';
+const TEMPS_IA = ['Frío', '20°C', '30°C', '40°C', '60°C', '90°C'];
+const RPMS_PASOS = [600, 800, 1000, 1200, 1400];
+const RPMS_IA = ['Sin centrifugado'].concat(RPMS_PASOS.map(r => r + ' RPM'));
+const SECADOS_IA = ['Sin secado', 'Menos seco', 'Seco normal', 'Extra seco', 'Por tiempo'];
+const STAIN_IA = [...new Set(PROGRAMAS.flatMap(p => (p.ajustes && p.ajustes.stain) || []))];
+const FUNCIONES_IA = ['Prelavado', 'Enjuague adicional'].concat(STAIN_IA.map(s => 'Stain Master: ' + s));
+const MAX_CONSEJO = 200;
+
+// Lo que admite cada programa (sale de "ajustes" en programas.js).
+function permitidos(p) {
+  const a = (p && p.ajustes) || {};
+  return {
+    temps: (a.temps || []).filter(t => TEMPS_IA.includes(t)),
+    rpms: a.rpmMax ? ['Sin centrifugado'].concat(RPMS_PASOS.filter(r => r <= a.rpmMax).map(r => r + ' RPM')) : [],
+    secados: (a.secados || []).filter(s => SECADOS_IA.includes(s)),
+    funciones: (a.funciones ? ['Prelavado', 'Enjuague adicional'] : []).concat((a.stain || []).map(s => 'Stain Master: ' + s))
+  };
+}
+
+// Deja solo lo que ese programa admite. Stain Master: un escenario a la vez. Máx. 2 funciones.
+// Devuelve null si no queda nada que sugerir.
+function limpiarAjuste(p, a) {
+  if (!a || typeof a !== 'object') return null;
+  const ok = permitidos(p);
+  const elegir = (v, lista) => (typeof v === 'string' && lista.includes(v) ? v : null);
+  let conStain = false;
+  const funciones = [];
+  for (const f of Array.isArray(a.funciones) ? a.funciones : []) {
+    if (!ok.funciones.includes(f) || funciones.includes(f)) continue;
+    if (f.startsWith('Stain Master')) { if (conStain) continue; conStain = true; }
+    funciones.push(f);
+  }
+  const r = {
+    temperatura: elegir(a.temperatura, ok.temps),
+    centrifugado: elegir(a.centrifugado, ok.rpms),
+    secado: elegir(a.secado, ok.secados),
+    funciones: funciones.slice(0, 2)
+  };
+  return r.temperatura || r.centrifugado || r.secado || r.funciones.length ? r : null;
+}
+
 const ESQUEMA = {
   type: 'json_schema',
   json_schema: {
@@ -85,11 +135,23 @@ const ESQUEMA = {
     schema: {
       type: 'object',
       properties: {
-        id: { type: 'string' },
+        id: { type: 'string', enum: IDS },
         motivo: { type: 'string' },
-        alternativas: { type: 'array', items: { type: 'string' } }
+        alternativas: { type: 'array', items: { type: 'string', enum: IDS } },
+        ajuste: {
+          type: 'object',
+          properties: {
+            temperatura: { type: 'string', enum: TEMPS_IA.concat(NO_APLICA) },
+            centrifugado: { type: 'string', enum: RPMS_IA.concat(NO_APLICA) },
+            secado: { type: 'string', enum: SECADOS_IA.concat(NO_APLICA) },
+            funciones: { type: 'array', items: { type: 'string', enum: FUNCIONES_IA } }
+          },
+          required: ['temperatura', 'centrifugado', 'secado', 'funciones'],
+          additionalProperties: false
+        },
+        consejo: { type: 'string' }
       },
-      required: ['id', 'motivo', 'alternativas'],
+      required: ['id', 'motivo', 'alternativas', 'ajuste', 'consejo'],
       additionalProperties: false
     }
   }
@@ -113,25 +175,73 @@ function cuerpoPara(modelos, texto) {
   };
 }
 
-// Los 14 programas vienen del archivo compartido con la página (campo "ia" = resumen para el prompt).
-const PROGRAMAS = require('../programas.js');
+// Qué se puede ajustar en cada programa, en palabras (va en el prompt junto al resumen "ia").
+function textoAjustes(p) {
+  const ok = permitidos(p);
+  const a = p.ajustes || {};
+  return [
+    'temperatura ' + (ok.temps.length ? ok.temps.join('/') : NO_APLICA),
+    'centrifugado ' + (a.rpmMax ? 'hasta ' + a.rpmMax + ' RPM' : NO_APLICA),
+    'secado ' + (ok.secados.length ? ok.secados.join('/') : NO_APLICA),
+    'funciones ' + (ok.funciones.length ? ok.funciones.join(', ') : 'ninguna')
+  ].join('; ');
+}
 
-const IDS = PROGRAMAS.map(p => p.id);
+// Ejemplos resueltos: muestran el formato y los casos que más confunden.
+const EJEMPLOS = [
+  ['Sábanas blancas con una mancha de vino tinto',
+    { id: 'algodon', motivo: 'Las sábanas de algodón aguantan agua caliente y centrifugado alto.', alternativas: ['eco'],
+      ajuste: { temperatura: '60°C', centrifugado: '1400 RPM', secado: 'Sin secado', funciones: ['Stain Master: Bebidas'] },
+      consejo: 'Si la mancha de vino ya se secó, humedécela con agua fría antes de meterla.' }],
+  ['Ropa deportiva sudada, de poliéster',
+    { id: '20c', motivo: 'El agua fría cuida el poliéster y la elasticidad de la ropa deportiva.', alternativas: ['mixto'],
+      ajuste: { temperatura: '20°C', centrifugado: '1000 RPM', secado: 'Sin secado', funciones: ['Enjuague adicional'] },
+      consejo: 'Lávala al revés y sin suavizante, que tapa la tela y guarda el olor a sudor.' }],
+  ['Dos chalecos de lana y quiero que queden secos',
+    { id: 'lana', motivo: 'La lana necesita un ciclo suave y centrifugado bajo para no encogerse.', alternativas: ['delicado'],
+      ajuste: { temperatura: '30°C', centrifugado: '600 RPM', secado: 'Sin secado', funciones: [] },
+      consejo: 'La lana no va a la secadora: sécalos estirados sobre una toalla.' }],
+  ['Una camisa que necesito seca para esta noche',
+    { id: 'rapido15', motivo: 'Es una sola prenda poco sucia y tienes apuro.', alternativas: ['mixto'],
+      ajuste: { temperatura: 'Frío', centrifugado: '800 RPM', secado: 'Seco normal', funciones: [] },
+      consejo: 'Presiona "Secado" para pasar a 1h WD: lava y seca hasta 1 kg en una hora.' }],
+  ['El plumón de la cama',
+    { id: 'algodon', motivo: 'El plumón es una pieza grande que necesita un ciclo largo y espacio para girar.', alternativas: ['mixto'],
+      ajuste: { temperatura: '40°C', centrifugado: '800 RPM', secado: 'Sin secado', funciones: ['Enjuague adicional'] },
+      consejo: 'El manual pide no secar plumones a máquina: tiéndelo al aire y sacúdelo seguido.' }],
+  ['El tambor quedó casi lleno de jeans y poleras',
+    { id: 'mixto', motivo: 'Jeans y poleras son ropa del día a día con mezcla de telas.', alternativas: ['algodon'],
+      ajuste: { temperatura: '30°C', centrifugado: '1000 RPM', secado: 'Sin secado', funciones: [] },
+      consejo: 'Deja un palmo libre arriba para que la ropa gire, y lava los jeans al revés.' }]
+];
 
 const SISTEMA = [
-  'Eres un asistente experto en la lavadora-secadora Midea MLSF-095B (carga frontal, 9,5 kg lavado / 7 kg secado, 1400 rpm, motor Inverter Quattro, Display Lunar, funciones Stain Master y HealthGuard).',
-  'Tu tarea: elegir EL MEJOR de sus 14 programas para lo que el usuario describe que va a lavar.',
+  'Eres un asistente experto en la lavadora-secadora Midea MLSF-095B (carga frontal, 9,5 kg lavado / 7 kg secado, 1400 rpm, motor Inverter, funciones Stain Master y Vapor Hygiene).',
+  'Tu tarea: elegir EL MEJOR de sus 14 programas para lo que el usuario describe, y sugerir cómo ajustarlo.',
   '',
-  'Programas disponibles (usa EXACTAMENTE el id indicado):',
-  PROGRAMAS.map(p => '- ' + p.id + ' (' + p.nombre + '): ' + p.ia).join('\n'),
+  'Programas (usa EXACTAMENTE el id indicado). Tras "|" va lo que se puede ajustar en cada uno:',
+  PROGRAMAS.map(p => '- ' + p.id + ' (' + p.nombre + '): ' + p.ia + ' | ' + textoAjustes(p)).join('\n'),
+  '',
+  'Datos del manual:',
+  '- Pasos del panel: temperatura Frío-20-30-40-60-90°C; centrifugado 0-600-800-1000-1200-1400 RPM; secado Menos seco (D-1), Seco normal (D-2), Extra seco (D-3) o Por tiempo.',
+  '- NO secar a máquina: lana, seda, cortinas sintéticas, medias de nailon, ropa con piezas metálicas, plumones, edredones, colchas, sacos de dormir, prendas con gomaespuma y ropa con restos de laca, quitaesmalte o solventes.',
+  '- Stain Master (solo Algodón y Mixto; Delicado solo Alimentos y Bebidas): Alimentos (verduras, jugos, salsas), Bebidas (vino tinto, bebidas, refrescos), Deportes y fitness (pasto, polvo, sudor), Exteriores y trabajadores (grasa, barro, carbón), Salud y belleza (cosméticos, sangre).',
+  '- Prelavado: ropa muy sucia o con barro. Enjuague adicional: ropa de bebé, piel sensible o alergias, o mucho detergente.',
   '',
   'Reglas:',
-  '- Responde UNICAMENTE con un objeto JSON valido, sin texto extra ni markdown.',
-  '- Formato exacto: {"id":"<id>","motivo":"<una frase breve en espanol>","alternativas":["<id>","<id>"]}',
-  '- "id" DEBE ser uno de los ids de la lista. "alternativas" son 0 a 2 ids secundarios.',
-  '- IMPORTANTE: elige "limpieza" SOLO si el usuario quiere limpiar o desinfectar la maquina o el tambor. Si menciona el tambor como CAPACIDAD (lleno, casi todo, cuanto cabe), NO uses "limpieza": recomienda un programa de lavado.',
+  '- Responde ÚNICAMENTE con un objeto JSON válido, sin texto extra ni markdown.',
+  '- Formato: {"id":"<id>","motivo":"<una frase>","alternativas":["<id>"],"ajuste":{"temperatura":"...","centrifugado":"...","secado":"...","funciones":[]},"consejo":"<una frase>"}',
+  '- "id" DEBE ser uno de los ids de la lista. "alternativas" son 0 a 2 ids secundarios, distintos de "id".',
+  '- "ajuste": usa solo valores que ese programa admite; si algo no se puede elegir en ese programa, pon "No aplica". Máximo 2 funciones, y solo si ayudan (Stain Master solo si hay una mancha concreta).',
+  '- "motivo": por qué ese programa, en una frase breve. "consejo": un consejo práctico para ESA carga, en una frase de máximo 150 caracteres, sin repetir el motivo (manchas, cómo cargar, cómo secar, carga máxima si se pasa).',
+  '- Escribe en español de Chile, tuteando, claro y sin tecnicismos.',
+  '- IMPORTANTE: elige "limpieza" SOLO si el usuario quiere limpiar o desinfectar la máquina o el tambor. Si menciona el tambor como CAPACIDAD (lleno, casi todo, cuánto cabe), NO uses "limpieza": recomienda un programa de lavado.',
   '- Poca ropa y urgente -> rapido15. Quiere lavar Y secar en un ciclo -> lavadosecado. Solo secar -> autosecado. Solo escurrir o centrifugar -> centrifugado.',
-  '- Si no esta claro el tipo de prenda, usa "mixto".'
+  '- Si pide secar algo que no se debe secar a máquina, recomienda lavarlo bien, pon "Sin secado" y avísalo en el consejo.',
+  '- Si no está claro el tipo de prenda, usa "mixto".',
+  '',
+  'Ejemplos:',
+  EJEMPLOS.map(([pregunta, respuesta]) => 'Usuario: ' + pregunta + '\nRespuesta: ' + JSON.stringify(respuesta)).join('\n')
 ].join('\n');
 
 // --- Protección del saldo ---------------------------------------------------------------
@@ -304,10 +414,13 @@ module.exports = async function handler(req, res) {
     .filter(id => IDS.includes(id) && id !== parsed.id)
     .slice(0, 2);
 
+  const programa = PROGRAMAS.find(p => p.id === parsed.id);
   res.status(200).json({
     id: parsed.id,
     motivo: String(parsed.motivo || '').slice(0, 300),
     alternativas,
+    ajuste: limpiarAjuste(programa, parsed.ajuste),
+    consejo: typeof parsed.consejo === 'string' ? parsed.consejo.trim().slice(0, MAX_CONSEJO) : '',
     modelo,
     ms: Date.now() - inicio
   });

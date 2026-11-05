@@ -9,7 +9,10 @@ descripción en lenguaje natural de lo que vas a lavar.
 1. Escribes qué vas a lavar (ej: *"Voy a lavar polerones gruesos talla XL, son 4 y ocupan casi todo el tambor"*).
 2. El front llama a `/api/recomendar` (función serverless en Vercel).
 3. Esa función consulta la IA de **OpenRouter** con un *system prompt* que contiene
-   los 14 programas (tomados de `programas.js`) y devuelve el programa idóneo + el motivo.
+   los 14 programas (tomados de `programas.js`, con cargas y tiempos del manual oficial), qué se puede
+   ajustar en cada uno y ejemplos resueltos. Devuelve el programa idóneo + el motivo, un **ajuste
+   sugerido** (temperatura, centrifugado, secado, Prelavado/Enjuague adicional/Stain Master) y un
+   **consejo** para esa carga. El servidor descarta cualquier ajuste que ese programa no admita.
 4. Si la API no está disponible o no hay clave, se usa el **motor local de palabras clave** como respaldo.
 5. Las últimas 5 recomendaciones quedan en **"Tus últimas consultas"**, guardadas solo en ese
    teléfono (`localStorage`). Al tocar una se muestra al instante, sin volver a consultar a la IA.

@@ -130,7 +130,36 @@ async function recomendacionIA(texto, signal) {
   const alternativas = (data.alternativas || [])
     .map(id => PROGRAMAS.find(p => p.id === id))
     .filter(p => p && p !== principal);
-  return { principal, alternativas, origen: 'IA', modelo: data.modelo || '', motivo: data.motivo || 'Recomendación del asistente IA.' };
+  return {
+    principal, alternativas, origen: 'IA', modelo: data.modelo || '', motivo: data.motivo || 'Recomendación del asistente IA.',
+    ajuste: leerAjuste(data.ajuste), consejo: leerConsejo(data.consejo)
+  };
+}
+
+// Ajuste sugerido por la IA (temperatura, centrifugado, secado, funciones) y consejo para la
+// carga. El servidor ya los valida; aquí solo se revisa la forma (también vienen del historial).
+function leerAjuste(a) {
+  if (!a || typeof a !== 'object') return null;
+  const texto = v => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 40) : null);
+  const funciones = (Array.isArray(a.funciones) ? a.funciones : []).map(texto).filter(Boolean).slice(0, 2);
+  const r = { temperatura: texto(a.temperatura), centrifugado: texto(a.centrifugado), secado: texto(a.secado), funciones };
+  return r.temperatura || r.centrifugado || r.secado || funciones.length ? r : null;
+}
+
+function leerConsejo(c) {
+  return typeof c === 'string' ? c.trim().slice(0, 200) : '';
+}
+
+function bloqueAjuste(rec) {
+  let html = '';
+  const a = rec.ajuste;
+  if (a) {
+    const partes = [a.temperatura, a.centrifugado, a.secado].concat(a.funciones).filter(Boolean);
+    html += '<div class="ajuste"><div class="ajuste-titulo">🎛️ Ajuste sugerido para tu carga</div><div class="ajuste-chips">'
+      + partes.map(x => `<span class="ajuste-chip">${escaparHtml(x)}</span>`).join('') + '</div></div>';
+  }
+  if (rec.consejo) html += `<div class="consejo">💬 ${escaparHtml(rec.consejo)}</div>`;
+  return html;
 }
 
 const SIN_PRENDA = '<div class="card empty">🤔 No detecté una prenda clara. Describe mejor la ropa (ej: "ropa deportiva de poliéster", "sábanas y toallas", "un suéter de lana") o toca un ejemplo de arriba.</div>';
@@ -141,6 +170,7 @@ function pintarRecomendacion(rec, sobrecarga, pendiente) {
   const nota = pendiente ? '<span class="ia-pendiente"> · ⏳ consultando a la IA…</span>' : '';
   const guardada = rec.guardada ? `🕘 Del historial (${escaparHtml(fechaCorta(rec.guardada))}) · ` : '';
   const porQue = `<div class="why">${guardada}${emoji} ${escaparHtml(rec.motivo)}${nota}</div>`
+    + bloqueAjuste(rec)
     + (sobrecarga ? '<div class="warning">⚠️ Mencionaste que el tambor queda casi lleno: retira algunas prendas para que la ropa gire, se enjuague y se centrifugue bien (máx. ~9,5 kg en lavado y ~7 kg en secado).</div>' : '');
   let html = tarjetaPrograma(rec.principal, porQue);
 
@@ -255,6 +285,8 @@ function guardarEnHistorial(texto, rec) {
     origen: rec.origen,
     fecha: Date.now()
   };
+  if (rec.ajuste) entrada.ajuste = rec.ajuste;
+  if (rec.consejo) entrada.consejo = rec.consejo;
   // La misma consulta no se repite: queda solo la más reciente, arriba.
   const clave = normalizar(entrada.texto).trim();
   const lista = [entrada, ...leerHistorial().filter(h => normalizar(h.texto).trim() !== clave)].slice(0, MAX_HISTORIAL);
@@ -296,7 +328,10 @@ function mostrarDelHistorial(h) {
     .map(id => PROGRAMAS.find(p => p.id === id))
     .filter(p => p && p !== principal);
   document.getElementById('loadInput').value = h.texto;
-  const rec = { principal, alternativas, origen: h.origen === 'IA' ? 'IA' : 'local', motivo: h.motivo || '', guardada: h.fecha };
+  const rec = {
+    principal, alternativas, origen: h.origen === 'IA' ? 'IA' : 'local', motivo: h.motivo || '', guardada: h.fecha,
+    ajuste: leerAjuste(h.ajuste), consejo: leerConsejo(h.consejo)
+  };
   pintarRecomendacion(rec, haySobrecarga(h.texto), false);
   document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }

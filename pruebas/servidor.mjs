@@ -224,5 +224,55 @@ function ok(cond, nombre, extra) {
   ok(s === 429 && n === 601, 'la consulta 601 del día (de IPs distintas) → 429', n);
 }
 
+// 11. Ajuste sugerido y consejo (sesión 13)
+{
+  const pedidas = [];
+  let contenido = '';
+  const h = cargar(async (url, opt) => {
+    if (url.endsWith('/models')) return json(LISTA);
+    pedidas.push(JSON.parse(opt.body));
+    return respuestaIA(contenido);
+  });
+  const pedir = async c => { contenido = JSON.stringify(c); return (await llamar(h)).json; };
+  console.log('11. Ajuste sugerido y consejo');
+
+  let r = await pedir({ id: 'algodon', motivo: 'm', alternativas: [], consejo: '  Remoja la mancha.  ',
+    ajuste: { temperatura: '60°C', centrifugado: '1200 RPM', secado: 'Sin secado', funciones: ['Stain Master: Bebidas', 'Prelavado'] } });
+  ok(JSON.stringify(r.ajuste) === JSON.stringify({ temperatura: '60°C', centrifugado: '1200 RPM', secado: 'Sin secado', funciones: ['Stain Master: Bebidas', 'Prelavado'] }),
+    'ajuste válido pasa completo', r.ajuste);
+  ok(r.consejo === 'Remoja la mancha.', 'consejo sin espacios de sobra', r.consejo);
+
+  r = await pedir({ id: 'lana', motivo: 'm', alternativas: [], consejo: 'c',
+    ajuste: { temperatura: '90°C', centrifugado: '1400 RPM', secado: 'Seco normal', funciones: ['Stain Master: Bebidas', 'Enjuague adicional'] } });
+  ok(r.ajuste && r.ajuste.temperatura === null && r.ajuste.centrifugado === null && r.ajuste.secado === null
+    && JSON.stringify(r.ajuste.funciones) === '["Enjuague adicional"]', 'lana: descarta 90°C, 1400 RPM, secado y Stain Master', r.ajuste);
+
+  r = await pedir({ id: 'algodon', motivo: 'm', alternativas: [], consejo: 'c',
+    ajuste: { temperatura: '40°C', centrifugado: 'No aplica', secado: 'No aplica', funciones: ['Stain Master: Bebidas', 'Stain Master: Alimentos', 'Prelavado', 'Enjuague adicional'] } });
+  ok(JSON.stringify(r.ajuste.funciones) === '["Stain Master: Bebidas","Prelavado"]', 'un solo Stain Master y máx. 2 funciones', r.ajuste.funciones);
+  ok(r.ajuste.centrifugado === null && r.ajuste.secado === null, '"No aplica" → null', r.ajuste);
+
+  r = await pedir({ id: 'limpieza', motivo: 'm', alternativas: [], consejo: 'c',
+    ajuste: { temperatura: 'No aplica', centrifugado: 'No aplica', secado: 'No aplica', funciones: [] } });
+  ok(r.ajuste === null, 'sin nada que sugerir → ajuste null', r.ajuste);
+
+  contenido = '{"id":"mixto","motivo":"Ropa diaria.","alternativas":[]}';
+  r = (await llamar(h)).json;
+  ok(r.id === 'mixto' && r.ajuste === null && r.consejo === '', 'modelo de respaldo sin ajuste ni consejo → igual responde', r);
+
+  r = await pedir({ id: 'mixto', motivo: 'm', alternativas: [], consejo: 'x'.repeat(500), ajuste: 'cualquier cosa' });
+  ok(r.consejo.length === 200 && r.ajuste === null, 'consejo cortado a 200 y ajuste raro ignorado', r);
+
+  const b = pedidas[0];
+  const esquema = b.response_format.json_schema.schema;
+  ok(esquema.required.includes('ajuste') && esquema.required.includes('consejo')
+    && esquema.properties.id.enum.length === 14, 'el esquema pide ajuste y consejo, con ids cerrados', esquema.required);
+  const sistema = b.messages[0].content;
+  ok(sistema.includes('Carga máx. 2 kg') && sistema.includes('NO secar a máquina') && sistema.includes('Stain Master')
+    && sistema.includes('Ejemplos:'), 'el prompt trae datos del manual y ejemplos');
+  ok(/- lana \(Lana\):.*\| temperatura Frío\/20°C\/30°C\/40°C; centrifugado hasta 600 RPM; secado Sin secado/.test(sistema),
+    'el prompt dice qué se ajusta en cada programa');
+}
+
 console.log(fallas ? `\n${fallas} prueba(s) fallaron` : '\nTodas las pruebas pasaron');
 process.exit(fallas ? 1 : 0);

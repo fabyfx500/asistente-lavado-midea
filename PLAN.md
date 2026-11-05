@@ -6,23 +6,24 @@
 
 ## Estado actual
 
-- **Fase en curso:** Fase 2 (sin empezar). Fase 1 cerrada y probada en el S21 FE.
-- **Próximo paso:** Fase 2: motor local por palabra completa (+ plurales simples) con pruebas
-  de los casos del diagnóstico. Recordar subir `VERSION` en `sw.js` al cambiar `index.html`.
-- **Próxima sesión:** `3. Fase 2 – Errores y velocidad`
+- **Fase en curso:** Fase 2 (motor local y errata listos).
+- **Próximo paso:** Fase 2, parte del front: mostrar el resultado local al instante y
+  reemplazarlo cuando llegue la IA (corte a los 8 s), y quitar el GET de estado al cargar.
+  Correr `node pruebas/motor.mjs` si se toca el motor. Subir `VERSION` en `sw.js` (va en `v2`).
+- **Próxima sesión:** `4. Fase 2 – Respuesta instantánea`
 
 ## Diagnóstico (revisión del 2026-11-04)
 
 - No es PWA: falta `manifest.webmanifest` (404 en producción), service worker e íconos.
-- Motor local con falsos positivos por buscar subcadenas: "sábanas planas" → Lana,
-  "títulos" → Delicado (tul), "hueco" → ECO, "tejido" → Lana.
+- ~~Motor local con falsos positivos por buscar subcadenas: "sábanas planas" → Lana,
+  "títulos" → Delicado (tul), "hueco" → ECO, "tejido" → Lana.~~ (corregido 2026-11-04)
 - ~~`rec.motivo` (texto de la IA) se inserta con `innerHTML` sin escapar (XSS).~~ (corregido 2026-11-04)
 - El front no tiene tiempo límite: hasta 5 modelos × 15 s en serie. Medido: 9 s por consulta.
 - Cada carga de la página hace `GET /api/recomendar` solo para el indicador de estado.
 - Caché de modelos gratis sin vencimiento; endpoint sin límite de uso.
 - Los 14 programas están duplicados en `index.html` y `api/recomendar.js`.
 - ~~Bug: `OPENROUTER_MODEL` con un modelo de pago se descartaba~~ (corregido 2026-11-04).
-- Errata: "se centrifuga bien" → "se centrifugue bien".
+- ~~Errata: "se centrifuga bien" → "se centrifugue bien".~~ (corregida 2026-11-04)
 
 ## Decisiones
 
@@ -50,13 +51,14 @@
 
 ## Fase 2 — Errores y velocidad
 
-- [ ] Motor local por palabra completa (+ plurales simples) y pruebas con los casos del diagnóstico
+- [x] Motor local por palabra completa (+ plurales simples) y pruebas con los casos del diagnóstico
+      (`node pruebas/motor.mjs`; la carpeta `pruebas/` no se publica)
 - [x] Escapar todo texto de la IA antes de mostrarlo (adelantado en la sesión 2 por el `?q=`)
 - [ ] Mostrar resultado local al instante y reemplazar con la IA; corte a los 8 s
 - [ ] Servidor: fallback con `models: [...]` en una sola llamada, `max_tokens`, JSON, caché con TTL
 - [ ] Quitar el GET de estado al cargar; el indicador se actualiza con la primera consulta
 - [x] Arreglar bug de `OPENROUTER_MODEL` (Haiku 5.5 primero, gratuitos de respaldo)
-- [ ] Corregir la errata "se centrifuga bien"
+- [x] Corregir la errata "se centrifuga bien"
 
 ## Fase 3 — Orden y seguridad
 
@@ -78,3 +80,4 @@
 | 1. Setup inicial (optimización) | 2026-11-04 | Revisión completa del proyecto, diagnóstico y plan. Se crean `PLAN.md` y `CLAUDE.md`. | — |
 | 1. Setup inicial (optimización) | 2026-11-04 | Cambio a Claude Haiku 5.5 como modelo principal con respaldo gratuito; indicador "IA activa · Claude Haiku". Verificado en producción: responde Haiku en 1,7–2,5 s (antes 9 s); "sábanas planas" → Algodón. La clave de Vercel es la "Default key" de OpenRouter. `PLAN.md` no es público (404). | `9477ec8` |
 | 2. Fase 1 – PWA instalable | 2026-11-04 | PWA: manifest con 4 accesos rápidos, íconos (SVG + PNG), `sw.js` (red primero / caché / sin `/api`), modo sin conexión, botón "Instalar app", aviso de versión nueva, safe areas y `theme-color` según tema, `vercel.json`, `/?q=texto`. Se adelantó el escape del texto de la IA. Probado en Chrome (localhost): registro, caché, carga sin servidor y actualización v1→v2. El navegador integrado de la app no soporta service workers. Publicado y verificado en producción: manifest, `sw.js` (sin caché) e íconos responden 200; el service worker se activa, aparece "Instalar app" y la IA responde (Haiku). Falta probar en el S21 FE. | `1a6c495` |
+| 3. Fase 2 – Errores y velocidad | 2026-11-04 | Motor local por palabra completa con plurales simples (y "secarla"); se quitan "tejido" y "sanitiz" como palabras clave; el aviso de tambor lleno también usa palabra completa ("rellena" ya no cuenta). Pruebas en `pruebas/motor.mjs` (29 casos, todos OK; 7 fallaban con la versión anterior), excluidas del deploy. Errata corregida. `VERSION` de `sw.js` → v2. Probado en la página local. Pendiente publicar. | (este commit) |

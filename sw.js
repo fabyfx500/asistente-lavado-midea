@@ -4,7 +4,7 @@
 // - /api: nunca se cachea (siempre va a la red).
 // IMPORTANTE: al cambiar archivos del front, sube VERSION para que la app instalada
 // muestre el aviso "Hay una versión nueva".
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'lavado-midea-' + VERSION;
 const PRECACHE = [
   '/',

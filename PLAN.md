@@ -6,11 +6,12 @@
 
 ## Estado actual
 
-- **Fase en curso:** Fase 2 (falta solo la parte del servidor).
-- **Próximo paso:** Fase 2, servidor (`api/recomendar.js`): fallback con `models: [...]` en una
-  sola llamada a OpenRouter, `max_tokens`, salida JSON y caché de modelos gratis con vencimiento.
-  Que la función responda antes de 8 s (el front corta ahí). `VERSION` de `sw.js` va en `v3`.
-- **Próxima sesión:** `5. Fase 2 – Servidor`
+- **Fase en curso:** Fase 2 (código listo; falta publicar el servidor y verificarlo en producción).
+- **Próximo paso:** publicar (`git push`) y verificar en producción que Haiku sigue respondiendo
+  con la llamada única `models: [...]` (mirar `modelo` y `ms` en la respuesta de `/api/recomendar`).
+  Si OpenRouter rechaza algún parámetro, revisar `cuerpoPara`. Luego, Fase 3: `programas.js` único.
+  `VERSION` de `sw.js` sigue en `v3` (esta sesión no tocó `index.html`).
+- **Próxima sesión:** `6. Fase 3 – Orden y seguridad` (o terminar la publicación de la 5 si quedó pendiente)
 
 ## Diagnóstico (revisión del 2026-11-04)
 
@@ -18,10 +19,10 @@
 - ~~Motor local con falsos positivos por buscar subcadenas: "sábanas planas" → Lana,
   "títulos" → Delicado (tul), "hueco" → ECO, "tejido" → Lana.~~ (corregido 2026-11-04)
 - ~~`rec.motivo` (texto de la IA) se inserta con `innerHTML` sin escapar (XSS).~~ (corregido 2026-11-04)
-- ~~El front no tiene tiempo límite~~ (corte a los 8 s, 2026-11-04). El servidor aún prueba hasta
-  5 modelos × 15 s en serie.
+- ~~El front no tiene tiempo límite~~ (corte a los 8 s, 2026-11-04). ~~El servidor prueba hasta
+  5 modelos × 15 s en serie.~~ (una sola llamada con tope de 7 s, 2026-11-04)
 - ~~Cada carga de la página hace `GET /api/recomendar` solo para el indicador de estado.~~ (quitado 2026-11-04)
-- Caché de modelos gratis sin vencimiento; endpoint sin límite de uso.
+- ~~Caché de modelos gratis sin vencimiento~~ (1 h, 2026-11-04); endpoint sin límite de uso.
 - Los 14 programas están duplicados en `index.html` y `api/recomendar.js`.
 - ~~Bug: `OPENROUTER_MODEL` con un modelo de pago se descartaba~~ (corregido 2026-11-04).
 - ~~Errata: "se centrifuga bien" → "se centrifugue bien".~~ (corregida 2026-11-04)
@@ -56,7 +57,8 @@
       (`node pruebas/motor.mjs`; la carpeta `pruebas/` no se publica)
 - [x] Escapar todo texto de la IA antes de mostrarlo (adelantado en la sesión 2 por el `?q=`)
 - [x] Mostrar resultado local al instante y reemplazar con la IA; corte a los 8 s
-- [ ] Servidor: fallback con `models: [...]` en una sola llamada, `max_tokens`, JSON, caché con TTL
+- [x] Servidor: fallback con `models: [...]` en una sola llamada, `max_tokens`, JSON, caché con TTL
+      (pruebas con OpenRouter simulado: `node pruebas/servidor.mjs`)
 - [x] Quitar el GET de estado al cargar; el indicador se actualiza con la primera consulta
 - [x] Arreglar bug de `OPENROUTER_MODEL` (Haiku 5.5 primero, gratuitos de respaldo)
 - [x] Corregir la errata "se centrifuga bien"
@@ -83,3 +85,4 @@
 | 2. Fase 1 – PWA instalable | 2026-11-04 | PWA: manifest con 4 accesos rápidos, íconos (SVG + PNG), `sw.js` (red primero / caché / sin `/api`), modo sin conexión, botón "Instalar app", aviso de versión nueva, safe areas y `theme-color` según tema, `vercel.json`, `/?q=texto`. Se adelantó el escape del texto de la IA. Probado en Chrome (localhost): registro, caché, carga sin servidor y actualización v1→v2. El navegador integrado de la app no soporta service workers. Publicado y verificado en producción: manifest, `sw.js` (sin caché) e íconos responden 200; el service worker se activa, aparece "Instalar app" y la IA responde (Haiku). Falta probar en el S21 FE. | `1a6c495` |
 | 3. Fase 2 – Errores y velocidad | 2026-11-04 | Motor local por palabra completa con plurales simples (y "secarla"); se quitan "tejido" y "sanitiz" como palabras clave; el aviso de tambor lleno también usa palabra completa ("rellena" ya no cuenta). Pruebas en `pruebas/motor.mjs` (29 casos, todos OK; 7 fallaban con la versión anterior), excluidas del deploy. Errata corregida. `VERSION` de `sw.js` → v2. Probado en la página local. Publicado y verificado en producción: `sw.js` en v2, las 29 pruebas pasan con el `index.html` publicado, `/pruebas/` da 404 y la IA responde (Haiku). En el S21 FE apareció "Hay una versión nueva" y se actualizó bien. | `c435205` |
 | 4. Fase 2 – Respuesta instantánea | 2026-11-04 | El resultado del motor local aparece al instante con "⏳ consultando a la IA…" y se reemplaza cuando llega la IA; corte a los 8 s (queda el local). Una consulta nueva o elegir un programa a mano cancela la anterior. Se quita el GET de estado al cargar: el indicador se confirma con la primera consulta ("IA activa", "IA no configurada", "la IA tardó demasiado"). `VERSION` de `sw.js` → v3. Probado en local con la API simulada (rápida, lenta y sin clave); 29 pruebas del motor OK. Publicado y verificado en producción: `sw.js` en v3, sin llamadas a `/api` al cargar, el resultado local aparece al instante y Haiku lo reemplaza en 2,4 s ("sábanas planas y fundas" → Algodón). En el S21 FE apareció "Hay una versión nueva" y se actualizó bien. | `ea7710b` |
+| 5. Fase 2 – Servidor | 2026-11-04 | `api/recomendar.js`: una sola llamada a OpenRouter con `models: [Haiku, 2 gratis]` (OpenRouter salta al siguiente si uno falla), mismos parámetros para todos (`max_tokens` 1024, `reasoning` low, salida JSON, sin `temperature`), tope total de 7 s (504 si la IA no contesta) y `modelo` real tomado de la respuesta. Lista de gratis con caché de 1 h que se renueva por detrás; en frío espera máx. 1,5 s y, sin lista, usa solo Haiku (un id inexistente haría fallar la llamada). Pruebas nuevas en `pruebas/servidor.mjs` (18 casos OK, OpenRouter simulado); 29 del motor OK. GET probado con la lista real. Falta publicar y verificar en producción. | (ver git log) |

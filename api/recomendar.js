@@ -21,34 +21,60 @@ const PREFERIDOS = [
 // Modelos que no sirven para esta tarea (código, visión, moderación, finanzas, salud).
 const EXCLUIR = ['code', 'vision', 'vl', 'embed', 'guard', 'safety', 'moderation', 'finance', 'health'];
 
-let CACHE_GRATIS = null;
+// Tiempos (el front corta a los 8 s, así que la función debe contestar antes).
+const LIMITE_TOTAL_MS = 7000;     // presupuesto total de la función
+const LIMITE_LISTA_MS = 1500;     // máximo para bajar la lista de modelos gratis (solo en frío)
+const TTL_LISTA_MS = 60 * 60 * 1000; // la lista de gratis se renueva cada 1 h
+const MAX_MODELOS = 3;            // principal + 2 gratuitos de respaldo, en UNA sola llamada
 
+// Caché de la lista de modelos gratis (vive mientras la función siga "tibia" en Vercel).
+let CACHE_GRATIS = null;   // { ids: [...], hora: ms }
+let ACTUALIZANDO = null;   // promesa de la descarga en curso (para no pedirla dos veces)
+
+function bajarListaGratis() {
+  if (ACTUALIZANDO) return ACTUALIZANDO;
+  ACTUALIZANDO = (async () => {
+    try {
+      const r = await fetch('https://openrouter.ai/api/v1/models', { signal: AbortSignal.timeout(5000) });
+      if (!r.ok) return CACHE_GRATIS;
+      const data = await r.json();
+      const ids = (data.data || [])
+        .map(m => m && m.id)
+        .filter(id => typeof id === 'string' && id.endsWith(':free'))
+        .filter(id => !EXCLUIR.some(x => id.toLowerCase().includes(x)));
+      CACHE_GRATIS = { ids, hora: Date.now() };
+      return CACHE_GRATIS;
+    } catch (e) {
+      return CACHE_GRATIS;
+    } finally {
+      ACTUALIZANDO = null;
+    }
+  })();
+  return ACTUALIZANDO;
+}
+
+// Devuelve la lista de gratis sin hacer esperar al usuario:
+// - Si hay caché vigente, la usa.
+// - Si está vencida, la usa igual y la renueva por detrás.
+// - Si no hay nada (arranque en frío), espera la descarga como máximo LIMITE_LISTA_MS.
 async function listarGratis() {
-  if (CACHE_GRATIS) return CACHE_GRATIS;
-  try {
-    const r = await fetch('https://openrouter.ai/api/v1/models');
-    if (!r.ok) return [];
-    const data = await r.json();
-    CACHE_GRATIS = (data.data || [])
-      .map(m => m && m.id)
-      .filter(id => typeof id === 'string' && id.endsWith(':free'))
-      .filter(id => !EXCLUIR.some(x => id.toLowerCase().includes(x)));
-    return CACHE_GRATIS;
-  } catch (e) { return []; }
+  if (CACHE_GRATIS) {
+    if (Date.now() - CACHE_GRATIS.hora > TTL_LISTA_MS) bajarListaGratis();
+    return CACHE_GRATIS.ids;
+  }
+  const espera = new Promise(resolve => setTimeout(resolve, LIMITE_LISTA_MS, null));
+  const res = await Promise.race([bajarListaGratis(), espera]);
+  return res ? res.ids : [];
 }
 
 // El modelo principal va SIEMPRE primero (aunque no sea gratuito); después, los gratuitos de respaldo.
+// Solo se usan gratuitos que existan en la lista real: un id inexistente haría fallar toda la llamada.
 async function obtenerCandidatos(max) {
   const gratis = await listarGratis();
-  let respaldo;
-  if (gratis.length) {
-    const pref = PREFERIDOS.filter(m => gratis.includes(m));
-    const resto = gratis.filter(m => !pref.includes(m));
-    respaldo = pref.concat(resto);
-  } else {
-    respaldo = PREFERIDOS;
-  }
-  return [MODELO_PRINCIPAL].concat(respaldo.filter(m => m !== MODELO_PRINCIPAL)).slice(0, max || 4);
+  const pref = PREFERIDOS.filter(m => gratis.includes(m));
+  const resto = gratis.filter(m => !pref.includes(m));
+  const respaldo = pref.concat(resto);
+  return [MODELO_PRINCIPAL].concat(respaldo.filter(m => m !== MODELO_PRINCIPAL)).slice(0, max || MAX_MODELOS);
 }
 
 const ESQUEMA = {
@@ -69,24 +95,22 @@ const ESQUEMA = {
   }
 };
 
-// Parámetros según el modelo: los modelos Claude 5.x no aceptan "temperature" y sí salida
-// estructurada y esfuerzo de razonamiento; los gratuitos varían, así que se les envía lo básico.
-function cuerpoPara(modelo, texto) {
-  const base = {
-    model: modelo,
+// Una sola petición para todos los candidatos: OpenRouter prueba "models" en orden y pasa al
+// siguiente si uno falla (sin créditos, caído, límite de uso). Los parámetros son los mismos para
+// todos: sin "temperature" (Claude 5.x no la acepta); OpenRouter ignora en cada modelo lo que no
+// soporte (salida JSON, razonamiento), y la respuesta se lee igual aunque venga como texto.
+function cuerpoPara(modelos, texto) {
+  return {
+    model: modelos[0],
+    models: modelos,
     messages: [
       { role: 'system', content: SISTEMA },
       { role: 'user', content: texto }
-    ]
+    ],
+    max_tokens: 1024,
+    reasoning: { effort: 'low' },
+    response_format: ESQUEMA
   };
-  if (modelo.endsWith(':free')) {
-    base.temperature = 0.2;
-  } else {
-    base.max_tokens = 1024;
-    base.reasoning = { effort: 'low' };
-    base.response_format = ESQUEMA;
-  }
-  return base;
 }
 
 const PROGRAMAS = [
@@ -133,6 +157,8 @@ function extraerJSON(txt) {
 }
 
 module.exports = async function handler(req, res) {
+  const inicio = Date.now();
+
   // GET: diagnóstico rápido (no gasta cuota). POST: recomendación.
   if (req.method === 'GET') {
     const gratis = await listarGratis();
@@ -141,7 +167,8 @@ module.exports = async function handler(req, res) {
       claveConfigurada: !!process.env.OPENROUTER_API_KEY,
       modeloPrincipal: MODELO_PRINCIPAL,
       modelosGratisDisponibles: gratis.length,
-      candidatos: await obtenerCandidatos(4)
+      listaGratisMinutos: CACHE_GRATIS ? Math.round((Date.now() - CACHE_GRATIS.hora) / 60000) : null,
+      candidatos: await obtenerCandidatos()
     });
     return;
   }
@@ -166,45 +193,59 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const candidatos = await obtenerCandidatos(4);
-  const errores = [];
-  for (const modelo of candidatos) {
-    try {
-      const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + apiKey,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': process.env.PUBLIC_SITE_URL || 'https://asistente-lavado-midea.vercel.app',
-          'X-Title': 'Asistente Lavado Midea'
-        },
-        body: JSON.stringify(cuerpoPara(modelo, texto)),
-        signal: AbortSignal.timeout(15000)
-      });
+  const candidatos = await obtenerCandidatos();
+  const restante = Math.max(1000, LIMITE_TOTAL_MS - (Date.now() - inicio));
 
-      if (!r.ok) { errores.push(modelo + ' HTTP ' + r.status); continue; }
-
-      const data = await r.json();
-      const contenido = data && data.choices && data.choices[0] && data.choices[0].message
-        ? data.choices[0].message.content : '';
-      const parsed = extraerJSON(contenido);
-      if (!parsed || !IDS.includes(parsed.id)) { errores.push(modelo + ' JSON invalido'); continue; }
-
-      const alternativas = (Array.isArray(parsed.alternativas) ? parsed.alternativas : [])
-        .filter(id => IDS.includes(id) && id !== parsed.id)
-        .slice(0, 2);
-
-      res.status(200).json({
-        id: parsed.id,
-        motivo: String(parsed.motivo || '').slice(0, 300),
-        alternativas,
-        modelo
-      });
-      return;
-    } catch (e) {
-      errores.push(modelo + ' ' + (e && e.message ? e.message : 'error'));
-    }
+  let r;
+  try {
+    r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + apiKey,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': process.env.PUBLIC_SITE_URL || 'https://asistente-lavado-midea.vercel.app',
+        'X-Title': 'Asistente Lavado Midea'
+      },
+      body: JSON.stringify(cuerpoPara(candidatos, texto)),
+      signal: AbortSignal.timeout(restante)
+    });
+  } catch (e) {
+    const tiempo = e && (e.name === 'TimeoutError' || e.name === 'AbortError');
+    res.status(tiempo ? 504 : 502).json({
+      error: tiempo ? 'La IA tardo demasiado.' : 'No se pudo conectar con la IA.',
+      candidatos,
+      ms: Date.now() - inicio
+    });
+    return;
   }
 
-  res.status(502).json({ error: 'No se pudo obtener recomendacion de la IA.', intentos: candidatos.length, detalle: errores.join(' | ') });
+  let data = null;
+  try { data = await r.json(); } catch (e) { /* respuesta no JSON */ }
+
+  if (!r.ok) {
+    const msg = data && data.error && data.error.message ? String(data.error.message).slice(0, 200) : '';
+    res.status(502).json({ error: 'No se pudo obtener recomendacion de la IA.', detalle: 'HTTP ' + r.status + (msg ? ' ' + msg : ''), candidatos });
+    return;
+  }
+
+  const modelo = (data && data.model) || candidatos[0];
+  const contenido = data && data.choices && data.choices[0] && data.choices[0].message
+    ? data.choices[0].message.content : '';
+  const parsed = extraerJSON(contenido);
+  if (!parsed || !IDS.includes(parsed.id)) {
+    res.status(502).json({ error: 'La IA respondio en un formato invalido.', modelo, candidatos });
+    return;
+  }
+
+  const alternativas = (Array.isArray(parsed.alternativas) ? parsed.alternativas : [])
+    .filter(id => IDS.includes(id) && id !== parsed.id)
+    .slice(0, 2);
+
+  res.status(200).json({
+    id: parsed.id,
+    motivo: String(parsed.motivo || '').slice(0, 300),
+    alternativas,
+    modelo,
+    ms: Date.now() - inicio
+  });
 };

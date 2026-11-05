@@ -6,10 +6,9 @@
 
 ## Estado actual
 
-- **Fase en curso:** Fase 1 (publicada; instalada en el S21 FE el 2026-11-04, falta probarla ahí)
-- **Próximo paso:** al iniciar la sesión 3, preguntar a Fabián cómo le fue con la prueba en el
-  S21 FE (lista abajo) y corregir lo que falle. Luego empezar la Fase 2: motor local por
-  palabra completa (+ plurales simples) con pruebas de los casos del diagnóstico.
+- **Fase en curso:** Fase 2 (sin empezar). Fase 1 cerrada y probada en el S21 FE.
+- **Próximo paso:** Fase 2: motor local por palabra completa (+ plurales simples) con pruebas
+  de los casos del diagnóstico. Recordar subir `VERSION` en `sw.js` al cambiar `index.html`.
 - **Próxima sesión:** `3. Fase 2 – Errores y velocidad`
 
 ## Diagnóstico (revisión del 2026-11-04)
@@ -43,7 +42,7 @@
 - [x] `viewport-fit=cover`, safe areas, `theme-color`, `meta description`, `enterkeyhint`
 - [x] `vercel.json`: `sw.js` sin caché, tipo correcto del manifest
 - [x] Instalar en el Samsung S21 FE (hecho por Fabián, 2026-11-04)
-- [ ] Probar en el S21 FE: abre como app (sin barra de Chrome), ícono bien recortado, accesos
+- [x] Probar en el S21 FE (todo OK según Fabián, 2026-11-04): abre como app (sin barra de Chrome), ícono bien recortado, accesos
       rápidos al mantener presionado, recomienda con IA, y en modo avión abre y usa el motor local
 
 > Accesos rápidos del ícono (mantener presionado): Deportiva, Sábanas, Secar, Limpieza.

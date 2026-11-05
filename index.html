@@ -339,6 +339,14 @@
     el.textContent = texto;
   }
 
+  // Nombre legible del modelo que respondió: "anthropic/claude-haiku-5.5" → "Claude Haiku 5.5".
+  // Los modelos gratuitos de respaldo se muestran solo como "IA".
+  function nombreModelo(id) {
+    const m = /^anthropic\/(claude-[a-z0-9.-]+)$/.exec(String(id || ''));
+    if (!m) return 'IA';
+    return m[1].split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+  }
+
   function estadoInicialIA() {
     if (location.protocol === 'file:') estadoIA('ia-off', '💡 Modo local (abierta sin servidor)');
     else if (navigator.onLine === false) estadoIA('ia-offline', '📴 Sin conexión · uso el motor local');
@@ -449,7 +457,7 @@
 
     // 3) Reemplazar con la IA o quedarse con el local.
     if (ia) {
-      estadoIA('ia-on', '🤖 IA activa · ' + (ia.modelo.includes('claude-haiku') ? 'Claude Haiku' : 'IA'));
+      estadoIA('ia-on', '🤖 IA activa · ' + nombreModelo(ia.modelo));
       pintarRecomendacion(ia, sobrecarga, false);
       return;
     }

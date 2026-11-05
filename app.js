@@ -120,7 +120,7 @@ async function recomendacionIA(texto, signal) {
     body: JSON.stringify({ texto }),
     signal
   });
-  if (!r.ok) throw new Error(r.status === 503 ? 'sin-clave' : 'http-' + r.status);
+  if (!r.ok) throw new Error(r.status === 503 ? 'sin-clave' : r.status === 429 ? 'limite' : 'http-' + r.status);
   const data = await r.json();
   const principal = PROGRAMAS.find(p => p.id === data.id);
   if (!principal) throw new Error('respuesta-invalida');
@@ -214,6 +214,7 @@ async function renderResultado(texto) {
   }
   if (fallo === 'sin-clave') estadoIA('ia-off', '💡 Modo local (IA no configurada)');
   else if (fallo === 'tiempo') estadoIA('ia-off', '💡 Modo local (la IA tardó demasiado)');
+  else if (fallo === 'limite') estadoIA('ia-off', '💡 Modo local (muchas consultas, la IA vuelve en un rato)');
   else estadoIA('ia-off', '💡 Modo local (sin conexión a la IA)');
   if (!local) { area.setAttribute('aria-busy', 'false'); area.innerHTML = SIN_PRENDA; return; }
   pintarRecomendacion(local, sobrecarga, false);

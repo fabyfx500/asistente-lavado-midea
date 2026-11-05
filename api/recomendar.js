@@ -134,6 +134,71 @@ const SISTEMA = [
   '- Si no esta claro el tipo de prenda, usa "mixto".'
 ].join('\n');
 
+// --- Protección del saldo ---------------------------------------------------------------
+// La app la usan pocas personas, a veces desde el mismo wifi (misma IP): los límites son holgados.
+// OJO: esto vive en la memoria de cada instancia de Vercel (si hay varias, cada una cuenta aparte).
+// Lo que de verdad protege el saldo es el tope de gasto de la clave en OpenRouter.
+const LIMITE_MINUTO = 15;          // consultas por IP en 1 minuto
+const LIMITE_DIA = 150;            // consultas por IP en 24 h
+const LIMITE_DIA_TOTAL = 600;      // consultas de todas las IP en 24 h (por instancia)
+const MINUTO_MS = 60 * 1000;
+const DIA_MS = 24 * 60 * 60 * 1000;
+const MAX_IPS = 5000;              // tope de IPs recordadas (para no llenar la memoria)
+
+const USO = new Map();             // ip -> { minuto: [horas], dia: n, diaDesde: ms }
+let USO_TOTAL = { n: 0, desde: 0 };
+
+// Sitios que pueden usar la API desde el navegador (además del propio dominio del despliegue).
+const ORIGENES = ['https://asistente-lavado-midea.vercel.app', process.env.PUBLIC_SITE_URL].filter(Boolean);
+
+function cabecera(req, nombre) {
+  const v = req.headers && req.headers[nombre];
+  return Array.isArray(v) ? v[0] : (v || '');
+}
+
+// Solo la propia página (mismo dominio), producción o localhost. Los navegadores siempre mandan
+// "Origin" en un POST con fetch; sin él (curl, scripts) se rechaza.
+function origenPermitido(req) {
+  const origen = cabecera(req, 'origin');
+  if (!origen) return false;
+  let url;
+  try { url = new URL(origen); } catch (e) { return false; }
+  if (ORIGENES.includes(url.origin)) return true;
+  const propio = cabecera(req, 'x-forwarded-host') || cabecera(req, 'host');
+  if (propio && url.host === propio) return true;
+  return url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+}
+
+// En Vercel, "x-forwarded-for" la pone la plataforma: la primera IP es la del usuario.
+function ipDe(req) {
+  const xff = cabecera(req, 'x-forwarded-for').split(',')[0].trim();
+  return xff || cabecera(req, 'x-real-ip') || (req.socket && req.socket.remoteAddress) || 'desconocida';
+}
+
+// Anota la consulta y devuelve null si está permitida, o los segundos que hay que esperar.
+function revisarLimite(ip) {
+  const ahora = Date.now();
+
+  if (ahora - USO_TOTAL.desde > DIA_MS) USO_TOTAL = { n: 0, desde: ahora };
+  if (USO_TOTAL.n >= LIMITE_DIA_TOTAL) return Math.ceil((USO_TOTAL.desde + DIA_MS - ahora) / 1000);
+
+  if (!USO.has(ip) && USO.size >= MAX_IPS) {
+    for (const [k, u] of USO) if (ahora - u.diaDesde > DIA_MS) USO.delete(k);
+    if (USO.size >= MAX_IPS) USO.clear();
+  }
+  let u = USO.get(ip);
+  if (!u || ahora - u.diaDesde > DIA_MS) { u = { minuto: [], dia: 0, diaDesde: ahora }; USO.set(ip, u); }
+  u.minuto = u.minuto.filter(t => ahora - t < MINUTO_MS);
+
+  if (u.dia >= LIMITE_DIA) return Math.ceil((u.diaDesde + DIA_MS - ahora) / 1000);
+  if (u.minuto.length >= LIMITE_MINUTO) return Math.ceil((u.minuto[0] + MINUTO_MS - ahora) / 1000);
+
+  u.minuto.push(ahora);
+  u.dia++;
+  USO_TOTAL.n++;
+  return null;
+}
+
 function extraerJSON(txt) {
   if (!txt) return null;
   const i = txt.indexOf('{');
@@ -160,6 +225,18 @@ module.exports = async function handler(req, res) {
   }
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Metodo no permitido' });
+    return;
+  }
+
+  if (!origenPermitido(req)) {
+    res.status(403).json({ error: 'Origen no permitido.' });
+    return;
+  }
+
+  const espera = revisarLimite(ipDe(req));
+  if (espera !== null) {
+    if (res.setHeader) res.setHeader('Retry-After', String(Math.max(1, espera)));
+    res.status(429).json({ error: 'Demasiadas consultas. Prueba de nuevo en un rato.', esperaSegundos: espera });
     return;
   }
 

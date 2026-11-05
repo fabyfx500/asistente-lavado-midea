@@ -24,14 +24,22 @@ function cargar(fetchFalso) {
   return require(RUTA);
 }
 
-async function llamar(handler, metodo = 'POST', body = { texto: 'sábanas planas' }) {
-  const out = { status: 0, json: null };
+// Por defecto simula la página publicada pidiendo desde una IP fija.
+const CABECERAS = {
+  origin: 'https://asistente-lavado-midea.vercel.app',
+  host: 'asistente-lavado-midea.vercel.app',
+  'x-forwarded-for': '200.1.2.3'
+};
+
+async function llamar(handler, metodo = 'POST', body = { texto: 'sábanas planas' }, cabeceras = CABECERAS) {
+  const out = { status: 0, json: null, headers: {} };
   const res = {
     status(c) { out.status = c; return this; },
-    json(j) { out.json = j; return this; }
+    json(j) { out.json = j; return this; },
+    setHeader(k, v) { out.headers[k.toLowerCase()] = v; }
   };
   const t = Date.now();
-  await handler({ method: metodo, body }, res);
+  await handler({ method: metodo, body, headers: cabeceras }, res);
   out.ms = Date.now() - t;
   return out;
 }
@@ -142,6 +150,78 @@ function ok(cond, nombre, extra) {
   ok(g.status === 200 && g.json.claveConfigurada === true && g.json.candidatos.length === 3, 'GET de diagnóstico', g.json);
   delete process.env.OPENROUTER_API_KEY;
   ok((await llamar(h)).status === 503, 'sin clave → 503');
+}
+
+// 8. Verificación de origen
+{
+  let chats = 0;
+  const h = cargar(async url => {
+    if (url.endsWith('/models')) return json(LISTA);
+    chats++;
+    return respuestaIA('{"id":"mixto","motivo":"x","alternativas":[]}');
+  });
+  const con = extra => ({ ...CABECERAS, ...extra });
+  console.log('8. Origen');
+  const sinOrigen = { ...CABECERAS }; delete sinOrigen.origin;
+  ok((await llamar(h, 'POST', undefined, sinOrigen)).status === 403, 'sin Origin (curl, scripts) → 403');
+  ok((await llamar(h, 'POST', undefined, con({ origin: 'https://otro-sitio.com' }))).status === 403, 'otro sitio → 403');
+  ok((await llamar(h, 'POST', undefined, con({ origin: 'https://asistente-lavado-midea.vercel.app.malo.com' }))).status === 403,
+    'dominio que solo empieza igual → 403');
+  ok((await llamar(h, 'POST', undefined, con({ origin: 'null' }))).status === 403, 'Origin "null" → 403');
+  ok(chats === 0, 'los rechazados no llegan a la IA', chats);
+  ok((await llamar(h)).status === 200, 'producción → 200');
+  ok((await llamar(h, 'POST', undefined, con({ origin: 'https://asistente-lavado-midea-abc123.vercel.app', host: 'asistente-lavado-midea-abc123.vercel.app' }))).status === 200,
+    'vista previa de Vercel (mismo dominio que la función) → 200');
+  ok((await llamar(h, 'POST', undefined, con({ origin: 'http://localhost:3000', host: 'localhost:3000' }))).status === 200, 'localhost → 200');
+  ok((await llamar(h, 'GET', undefined, {})).status === 200, 'el GET de diagnóstico no exige Origin');
+}
+
+// 9. Límite de uso por IP
+{
+  let chats = 0;
+  const h = cargar(async url => {
+    if (url.endsWith('/models')) return json(LISTA);
+    chats++;
+    return respuestaIA('{"id":"mixto","motivo":"x","alternativas":[]}');
+  });
+  const ip = n => ({ ...CABECERAS, 'x-forwarded-for': n + ', 10.0.0.1' });
+  console.log('9. Límite por IP');
+  const estados = [];
+  for (let i = 0; i < 16; i++) estados.push((await llamar(h, 'POST', undefined, ip('1.1.1.1'))).status);
+  ok(estados.slice(0, 15).every(s => s === 200) && estados[15] === 429, '15 por minuto pasan, la 16.ª → 429', estados);
+  const r = await llamar(h, 'POST', undefined, ip('1.1.1.1'));
+  ok(r.status === 429 && Number(r.headers['retry-after']) > 0 && Number(r.headers['retry-after']) <= 60,
+    'avisa cuánto esperar (Retry-After ' + r.headers['retry-after'] + ' s)', r);
+  ok(chats === 15, 'las bloqueadas no llegan a la IA', chats);
+  ok((await llamar(h, 'POST', undefined, ip('2.2.2.2'))).status === 200, 'otra IP no se ve afectada');
+
+  const realNow = Date.now;
+  let reloj = realNow();
+  Date.now = () => reloj;
+  reloj += 61 * 1000;
+  ok((await llamar(h, 'POST', undefined, ip('1.1.1.1'))).status === 200, 'al minuto siguiente vuelve a responder');
+
+  // Tope diario por IP: 150 (repartidas para no chocar con el de 15/minuto)
+  let ultimo;
+  for (let i = 0; i < 160; i++) {
+    if (i % 15 === 0) reloj += 61 * 1000;
+    ultimo = (await llamar(h, 'POST', undefined, ip('3.3.3.3'))).status;
+    if (ultimo === 429) { ok(i === 150, 'tope diario: la consulta 151 del día → 429', i + 1); break; }
+  }
+  ok(ultimo === 429, 'se alcanzó el tope diario');
+  reloj += 24 * 60 * 60 * 1000;
+  ok((await llamar(h, 'POST', undefined, ip('3.3.3.3'))).status === 200, 'al día siguiente vuelve a responder');
+  Date.now = realNow;
+}
+
+// 10. Tope total por instancia (600 al día entre todas las IP)
+{
+  const h = cargar(async url => url.endsWith('/models') ? json(LISTA) : respuestaIA('{"id":"mixto","motivo":"x","alternativas":[]}'));
+  console.log('10. Tope total');
+  let n = 0, s;
+  do { s = (await llamar(h, 'POST', undefined, { ...CABECERAS, 'x-forwarded-for': '9.9.' + Math.floor(n / 10) + '.' + (n % 10) })).status; n++; }
+  while (s === 200 && n < 700);
+  ok(s === 429 && n === 601, 'la consulta 601 del día (de IPs distintas) → 429', n);
 }
 
 console.log(fallas ? `\n${fallas} prueba(s) fallaron` : '\nTodas las pruebas pasaron');

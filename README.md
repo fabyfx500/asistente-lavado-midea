@@ -21,11 +21,18 @@ Si no hay créditos o falla, se usan automáticamente los modelos gratuitos (`:f
 2. En Vercel: **Project → Settings → Environment Variables** y agrega:
    - `OPENROUTER_API_KEY` = tu clave (obligatoria).
    - `OPENROUTER_MODEL` = (opcional) cambia el modelo principal, ej. `anthropic/claude-sonnet-5.5`.
-   - `PUBLIC_SITE_URL` = (opcional) tu dominio para las cabeceras de OpenRouter.
+   - `PUBLIC_SITE_URL` = (opcional) tu dominio propio: se usa en las cabeceras de OpenRouter y
+     queda autorizado para llamar a la API.
 3. Redeploy. Listo.
 
 > ⚠️ **Seguridad:** la clave vive solo en el servidor (variable de entorno). No la pongas
 > nunca en el front (`index.html`, `app.js`), porque quedaría pública. El archivo `.env` está en `.gitignore`.
+>
+> La API solo acepta consultas desde la propia página (cabecera `Origin`: el mismo dominio,
+> producción o `localhost`) y tiene un límite holgado por IP: 15 por minuto y 150 al día (más 600
+> al día en total). Ese límite vive en la memoria de cada instancia de Vercel, así que **pon también
+> un tope de gasto a la clave en OpenRouter** (Settings → API Keys → Credit limit): es lo que de
+> verdad protege el saldo.
 
 ## Estructura
 

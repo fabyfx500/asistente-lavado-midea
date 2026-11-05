@@ -6,16 +6,17 @@
 
 ## Estado actual
 
-- **Fase en curso:** Fase 3 (2 de 4 tareas hechas).
-- **Próximo paso:** Fase 3: límite de uso por IP y verificación de origen en
-  `/api/recomendar` (agregar casos a `pruebas/servidor.mjs`). Para la CSP de la tarea siguiente: en
+- **Fase en curso:** Fase 3 (3 de 4 tareas hechas).
+- **Pendiente de la sesión 8:** publicar (commit hecho, falta `git push`) y verificar en
+  producción: la página sigue recibiendo la IA, y un POST sin `Origin` o desde otro sitio da 403.
+  Fabián: poner un tope de gasto a la clave en OpenRouter (Settings → API Keys → Credit limit) y
+  actualizar el S21 FE a v7.
+- **Próximo paso:** Fase 3: cabeceras de seguridad (CSP, `Referrer-Policy`) en `vercel.json`. En
   `index.html` solo queda un `<script>` en línea (el tema antes de pintar); se puede permitir con su
-  hash. `VERSION` de `sw.js` va en `v6`.
-- **Próxima sesión:** `8. Fase 3 – Límite de uso de la API`
-- **Usuarios:** solo 3 personas del mismo departamento (Fabián, su pareja y su cuñada). El límite
-  por IP debe ser holgado (en el wifi de la casa comparten IP), sin cuentas ni login. El límite en
-  memoria de Vercel es solo por instancia: proponer a Fabián además un tope de gasto en la clave de
-  OpenRouter (lo configura él en su panel), que es lo que de verdad protege el saldo.
+  hash. `VERSION` de `sw.js` va en `v7`.
+- **Próxima sesión:** `9. Fase 3 – Cabeceras de seguridad`
+- **Usuarios:** solo 3 personas del mismo departamento (Fabián, su pareja y su cuñada), sin cuentas
+  ni login. Límite de la API: 15/min y 150/día por IP, 600/día en total (por instancia de Vercel).
 
 ## Diagnóstico (revisión del 2026-11-04)
 
@@ -26,7 +27,7 @@
 - ~~El front no tiene tiempo límite~~ (corte a los 8 s, 2026-11-04). ~~El servidor prueba hasta
   5 modelos × 15 s en serie.~~ (una sola llamada con tope de 7 s, 2026-11-04)
 - ~~Cada carga de la página hace `GET /api/recomendar` solo para el indicador de estado.~~ (quitado 2026-11-04)
-- ~~Caché de modelos gratis sin vencimiento~~ (1 h, 2026-11-04); endpoint sin límite de uso.
+- ~~Caché de modelos gratis sin vencimiento~~ (1 h, 2026-11-04); ~~endpoint sin límite de uso~~ (2026-11-05).
 - ~~Los 14 programas están duplicados en `index.html` y `api/recomendar.js`.~~ (unificados en `programas.js`, 2026-11-05)
 - ~~Bug: `OPENROUTER_MODEL` con un modelo de pago se descartaba~~ (corregido 2026-11-04).
 - ~~Errata: "se centrifuga bien" → "se centrifugue bien".~~ (corregida 2026-11-04)
@@ -71,7 +72,7 @@
 
 - [x] `programas.js` único compartido por front y API
 - [x] Separar `styles.css` y `app.js`
-- [ ] Límite de uso por IP y verificación de origen en `/api/recomendar`
+- [x] Límite de uso por IP y verificación de origen en `/api/recomendar`
 - [ ] Cabeceras de seguridad: CSP, `Referrer-Policy`
 
 ## Fase 4 — Extras (opcional)
@@ -94,3 +95,4 @@
 | 6. Fase 3 – Programas en un solo archivo | 2026-11-05 | A pedido de Fabián, el indicador muestra el modelo con su versión ("IA activa · Claude Haiku 5.5"): el nombre se arma desde el `modelo` que devuelve el servidor (los gratuitos siguen como "IA"). `VERSION` de `sw.js` → v5. Publicado y verificado en producción: "sábanas y toallas" → Algodón con "Claude Haiku 5.5" en el indicador; apareció el aviso de versión nueva (v4→v5). Fabián actualizó el S21 FE a v5 sin problemas. | `9979c3c` |
 | 7. Fase 3 – Separar CSS y JS | 2026-11-05 | `index.html` queda solo con la estructura (77 líneas): los estilos pasan a `styles.css` y la lógica + motor local a `app.js`, copiados tal cual (verificado idéntico línea por línea). Rutas relativas, así abrir el archivo directo sigue funcionando. El script del tema sigue en línea en el `<head>` para que no parpadee. `sw.js` → v6: precachea `styles.css` y `app.js`, y el `.css` también va "red primero" (página, estilos y scripts siempre de la misma versión). `pruebas/motor.mjs` ahora lee el motor de `app.js`; 29 del motor y 18 del servidor OK. README y CLAUDE.md actualizados. Probado en Chrome (localhost, IA simulada): v6 activa con los 10 archivos en caché, 14 programas, local al instante ("Sábanas y toallas" → Algodón) y reemplazo por la IA con "Claude Haiku 5.5"; sin servidor carga con estilos desde la caché y recomienda ("un suéter de lana" → Lana). Falta publicar y probar en el S21 FE. | `6211c9a` |
 | 7. Fase 3 – Separar CSS y JS | 2026-11-05 | Publicado y verificado en producción: `/styles.css` y `/app.js` dan 200 con su tipo correcto e iguales al repo, `index.html` de 77 líneas, `sw.js` en v6, `/pruebas/` y `PLAN.md` dan 404. Haiku responde ("sábanas planas y fundas" → Algodón, "ropa deportiva de poliéster" → 20°C, "quiero limpiar el tambor" → Limpieza). En Chrome con la v5 apareció el aviso; "Actualizar" activó la v6 (10 archivos en caché, la v5 borrada) y "Sábanas y toallas" → Algodón con "Claude Haiku 5.5" en 1,6 s. Fabián actualizó el S21 FE a v6 sin problemas. | — |
+| 8. Fase 3 – Límite de uso de la API | 2026-11-05 | `api/recomendar.js`: el POST exige cabecera `Origin` del mismo dominio de la función (cubre producción y vistas previas de Vercel), de `PUBLIC_SITE_URL` o de `localhost`; si no, 403 sin llamar a la IA. Límite en memoria: 15/min y 150/día por IP (primera IP de `x-forwarded-for`), 600/día en total por instancia; al pasarlo, 429 con `Retry-After`. El GET de diagnóstico no cambia. La página muestra "Modo local (muchas consultas, la IA vuelve en un rato)" y deja el resultado local. `VERSION` de `sw.js` → v7. README: explica el límite y recomienda el tope de gasto en OpenRouter. `pruebas/servidor.mjs`: 37 casos OK (19 nuevos de origen y límites); 29 del motor OK. Probado en el navegador con servidor local (función real, IA simulada): Chrome manda `Origin` en el POST, la consulta pasa (200, "Claude Haiku 5.5") y la 16.ª del minuto da 429 con el aviso y "un suéter de lana" → Lana del motor local. Falta publicar y verificar en producción. | — |

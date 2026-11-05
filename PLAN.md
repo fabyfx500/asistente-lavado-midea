@@ -6,7 +6,7 @@
 
 ## Estado actual
 
-- **Fase en curso:** Fase 3 (3 de 4 tareas hechas).
+- **Fase en curso:** Fase 3 (4 de 4 tareas hechas; falta publicar la última).
 - **Tope de gasto:** la "Default key (f55)" tiene un límite de **US$2** (lo bajó Fabián desde $100
   el 2026-11-05; se cambia en OpenRouter → Workspaces → Keys → ⋮ de la clave → editar). Si se
   alcanza, la IA deja de responder y la app queda en modo local.
@@ -14,10 +14,10 @@
   `OPENROUTER_API_KEY`). Ese día la IA deja de responder y la app queda en modo local. Antes de esa
   fecha: quitarle el vencimiento al editarla, o crear una clave nueva, ponerla en Vercel y redeploy.
   Recordárselo a Fabián en cualquier sesión desde febrero de 2027.
-- **Próximo paso:** Fase 3: cabeceras de seguridad (CSP, `Referrer-Policy`) en `vercel.json`. En
-  `index.html` solo queda un `<script>` en línea (el tema antes de pintar); se puede permitir con su
-  hash. `VERSION` de `sw.js` va en `v7`.
-- **Próxima sesión:** `9. Fase 3 – Cabeceras de seguridad`
+- **Próximo paso:** publicar las cabeceras de seguridad (commit `000341c`) y verificar en producción
+  que llegan, que la página carga sin errores de CSP en la consola y que la IA responde. No hace
+  falta subir `VERSION` de `sw.js` (sigue en `v7`): el front no cambió. Después, Fase 4 (opcional).
+- **Próxima sesión:** `10. Fase 4 – Historial` (o seguir la 9 si falta publicar)
 - **Usuarios:** solo 3 personas del mismo departamento (Fabián, su pareja y su cuñada), sin cuentas
   ni login. Límite de la API: 15/min y 150/día por IP, 600/día en total (por instancia de Vercel).
 
@@ -76,7 +76,7 @@
 - [x] `programas.js` único compartido por front y API
 - [x] Separar `styles.css` y `app.js`
 - [x] Límite de uso por IP y verificación de origen en `/api/recomendar`
-- [ ] Cabeceras de seguridad: CSP, `Referrer-Policy`
+- [x] Cabeceras de seguridad: CSP, `Referrer-Policy` (falta publicar)
 
 ## Fase 4 — Extras (opcional)
 
@@ -100,3 +100,4 @@
 | 7. Fase 3 – Separar CSS y JS | 2026-11-05 | Publicado y verificado en producción: `/styles.css` y `/app.js` dan 200 con su tipo correcto e iguales al repo, `index.html` de 77 líneas, `sw.js` en v6, `/pruebas/` y `PLAN.md` dan 404. Haiku responde ("sábanas planas y fundas" → Algodón, "ropa deportiva de poliéster" → 20°C, "quiero limpiar el tambor" → Limpieza). En Chrome con la v5 apareció el aviso; "Actualizar" activó la v6 (10 archivos en caché, la v5 borrada) y "Sábanas y toallas" → Algodón con "Claude Haiku 5.5" en 1,6 s. Fabián actualizó el S21 FE a v6 sin problemas. | — |
 | 8. Fase 3 – Límite de uso de la API | 2026-11-05 | `api/recomendar.js`: el POST exige cabecera `Origin` del mismo dominio de la función (cubre producción y vistas previas de Vercel), de `PUBLIC_SITE_URL` o de `localhost`; si no, 403 sin llamar a la IA. Límite en memoria: 15/min y 150/día por IP (primera IP de `x-forwarded-for`), 600/día en total por instancia; al pasarlo, 429 con `Retry-After`. El GET de diagnóstico no cambia. La página muestra "Modo local (muchas consultas, la IA vuelve en un rato)" y deja el resultado local. `VERSION` de `sw.js` → v7. README: explica el límite y recomienda el tope de gasto en OpenRouter. `pruebas/servidor.mjs`: 37 casos OK (19 nuevos de origen y límites); 29 del motor OK. Probado en el navegador con servidor local (función real, IA simulada): Chrome manda `Origin` en el POST, la consulta pasa (200, "Claude Haiku 5.5") y la 16.ª del minuto da 429 con el aviso y "un suéter de lana" → Lana del motor local. Falta publicar y verificar en producción. | `583ec21` |
 | 8. Fase 3 – Límite de uso de la API | 2026-11-05 | Publicado y verificado en producción: `sw.js` en v7; POST sin `Origin` o desde otro sitio → 403 "Origen no permitido"; con el `Origin` propio Haiku responde ("sábanas planas y fundas" → Algodón, 1,2 s en la función). El límite funciona con la IP que entrega Vercel: con consultas vacías (cuentan pero no llaman a la IA) la 16.ª del minuto da 429 con `Retry-After`. El GET de diagnóstico sigue OK; `PLAN.md` y `/pruebas/` dan 404. En Chrome con la v6 apareció el aviso; "Actualizar" dejó solo la caché v7; dentro del minuto bloqueado se vio "Modo local (muchas consultas…)" y, pasado el minuto, "Sábanas y toallas" → Algodón con "Claude Haiku 5.5". Falta el S21 FE y el tope de gasto en OpenRouter. Después, Fabián bajó el tope de la "Default key" de $100 a US$2 y actualizó el S21 FE a v7 sin problemas. Se anotó que la clave vence el 2027-03-20. | — |
+| 9. Fase 3 – Cabeceras de seguridad | 2026-11-05 | `vercel.json`: CSP para todas las rutas (`default-src 'self'`, scripts y estilos solo de archivos propios, el script del tema en línea permitido por su hash, sin `unsafe-inline`/`unsafe-eval`, `frame-ancestors 'none'`, `form-action`/`base-uri`/`object-src` cerrados), `Referrer-Policy: strict-origin-when-cross-origin` (con `no-referrer` Chrome mandaría `Origin: null` y la API daría 403), `X-Content-Type-Options`, `X-Frame-Options` y `Permissions-Policy`. Nuevo `pruebas/cabeceras.mjs` (15 casos OK): revisa el hash contra `index.html` y que no haya `style=""` ni `onclick=""`; si el script del tema cambia, da el hash nuevo. `.gitattributes` deja los `.html` en LF (con CRLF cambiaría el hash). README y CLAUDE.md actualizados. 29 del motor y 37 del servidor OK. Probado en Chrome con un servidor local que aplica las cabeceras de `vercel.json` (función real, IA simulada): sin errores de CSP, el tema oscuro se aplica antes de pintar, estilos y 14 programas OK, "sábanas y toallas" → Algodón con "Claude Haiku 5.5", y un script inyectado y un `onerror` en línea quedan bloqueados. Falta publicar y verificar en producción. | `000341c` |

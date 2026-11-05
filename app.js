@@ -558,6 +558,33 @@ function initInstalar() {
   window.addEventListener('appinstalled', () => { btn.hidden = true; aviso = null; });
 }
 
+// Versión instalada (la VERSION de sw.js), en el pie de página: sirve para confirmar que la app
+// se actualizó. Se le pregunta al service worker activo; si no contesta (los anteriores a v10 no
+// sabían), se deduce del nombre de la caché cuando hay una sola.
+async function mostrarVersion(reg) {
+  const el = document.getElementById('versionApp');
+  if (!el) return;
+  const sw = navigator.serviceWorker.controller || (reg && reg.active);
+  let version = '';
+  if (sw) {
+    version = await new Promise((resolve) => {
+      const canal = new MessageChannel();
+      const plazo = setTimeout(() => resolve(''), 1500);
+      canal.port1.onmessage = (e) => { clearTimeout(plazo); resolve(String(e.data || '')); };
+      sw.postMessage('VERSION', [canal.port2]);
+    });
+  }
+  if (!version) {
+    try {
+      const claves = (await caches.keys()).filter(k => k.startsWith('lavado-midea-'));
+      if (claves.length === 1) version = claves[0].slice('lavado-midea-'.length);
+    } catch (e) {}
+  }
+  if (!/^v\d+$/.test(version)) return;
+  el.textContent = 'Versión de la app: ' + version;
+  el.hidden = false;
+}
+
 // Service worker: funciona sin conexión y avisa cuando hay una versión nueva.
 function initServiceWorker() {
   if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
@@ -576,11 +603,13 @@ function initServiceWorker() {
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (recargar) location.reload();
+    else mostrarVersion(); // primera visita: el service worker recién instalado toma el control
   });
 
   window.addEventListener('load', async () => {
     try {
       const reg = await navigator.serviceWorker.register('/sw.js');
+      mostrarVersion(reg);
       mostrarAviso(reg);
       reg.addEventListener('updatefound', () => {
         const nuevo = reg.installing;

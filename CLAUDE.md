@@ -25,6 +25,8 @@ de verdad del avance.
 - Mantener el motor local funcionando como respaldo sin conexión.
 - Es una PWA: al cambiar `index.html`, `styles.css`, `app.js`, `programas.js` o los íconos, subir `VERSION` en `sw.js` para que la app
   instalada muestre "Hay una versión nueva". Si se agrega un archivo estático, sumarlo a `PRECACHE`.
+  Esa misma `VERSION` se ve en el pie de página ("Versión de la app: vN"): la página se la pide al
+  service worker activo, así que no hay que escribirla en otro lado.
 - Para probar el service worker usar Chrome (el navegador integrado de la app no lo soporta).
 - Hay CSP en `vercel.json`: el `<script>` del tema en `index.html` va permitido por su hash. Si se
   cambia, correr `node pruebas/cabeceras.mjs` y pegar el hash nuevo. Sin `style=""` ni `onclick=""`.

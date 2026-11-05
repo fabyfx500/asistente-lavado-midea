@@ -5,7 +5,7 @@
 // - /api: nunca se cachea (siempre va a la red).
 // IMPORTANTE: al cambiar archivos del front, sube VERSION para que la app instalada
 // muestre el aviso "Hay una versión nueva".
-const VERSION = 'v9';
+const VERSION = 'v10';
 const CACHE = 'lavado-midea-' + VERSION;
 const PRECACHE = [
   '/',
@@ -33,9 +33,11 @@ self.addEventListener('activate', (event) => {
   })());
 });
 
-// La página pide activar la versión nueva cuando el usuario toca "Actualizar".
+// La página pide activar la versión nueva cuando el usuario toca "Actualizar",
+// y pregunta la versión instalada para mostrarla en el pie de página.
 self.addEventListener('message', (event) => {
   if (event.data === 'ACTIVAR') self.skipWaiting();
+  else if (event.data === 'VERSION' && event.ports[0]) event.ports[0].postMessage(VERSION);
 });
 
 self.addEventListener('fetch', (event) => {
